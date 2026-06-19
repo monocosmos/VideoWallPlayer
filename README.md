@@ -1,111 +1,30 @@
 # VideoWallPlayer
 
-Windows video wall ekranlari icin kenarliksiz, yazisiz, kontrol cubuksuz tam ekran video oynatici.
+VideoWallPlayer, video wall ekranlari icin Windows ve Android uygulamalarindan olusan VLC/libVLC tabanli bir oynatici paketidir.
 
-Ana uygulama `native` klasorundeki Windows native VLC/libVLC tabanli surumdur. `src` klasoru eski Electron prototipini icerir.
-Android APK projesi `android/VideoWallPlayer.Android` klasorundedir.
+Repo iki ana uygulama klasorune ayrilmistir:
 
-## Ozellikler
+| Klasor | Platform | Aciklama |
+| --- | --- | --- |
+| [`window_app`](window_app/README.md) | Windows | WinForms + VLC/libVLC tabanli masaustu EXE uygulamasi |
+| [`android_app`](android_app/README.md) | Android | Android Activity + VLC/libVLC tabanli APK uygulamasi |
 
-- Coklu video secimi ve klasorden toplu ekleme
-- Liste bitince basa donme, tek video tekrari veya liste sonunda durma
-- Karisik oynatma
-- Tam ekran, penceresiz ve kontrolsuz oynatma
-- Video sirasinda imleci gizleme
-- `Esc` veya `F11` ile oynatimdan cikma
-- Donanim hizlandirma secenekleri
-- Windows GPU tercihi
-- Coklu ekran secimi
-- 20 dil secenegi
-- VLC/libVLC codec destegi
-- Videolar arasi daha puruzsuz gecis icin cift oynaticili on hazirlama
+## Dokumanlar
 
-## Android APK
+- Windows README: [`window_app/README.md`](window_app/README.md)
+- Windows wiki: [`window_app/wiki/Home.md`](window_app/wiki/Home.md)
+- Android README: [`android_app/README.md`](android_app/README.md)
+- Android wiki: [`android_app/wiki/Home.md`](android_app/wiki/Home.md)
 
-Android uygulamasi da VLC/libVLC tabanlidir. Sistem dosya secicisiyle coklu video secimi yapar, playlisti saklar, tam ekran oynatir, liste bitince basa donebilir, karisik oynatabilir ve video ekraninda `Space` tusuyla duraklat/devam ettir yapar.
+## Amac
 
-Hazir debug APK:
+- Kenarliksiz, kontrol cubuksuz ve metinsiz tam ekran video oynatma
+- Playlist, loop, karisik oynatma ve sessiz mod
+- Donanim hizlandirma destekli VLC/libVLC oynatma
+- Video wall, kiosk, otel, fuar, showroom ve dijital signage senaryolari
 
-```text
-dist-android\VideoWallPlayer-android-debug.apk
-```
+## GitHub
 
-Android Studio ile acilacak proje:
+Public repo:
 
-```text
-android\VideoWallPlayer.Android
-```
-
-APK yeniden uretmek icin:
-
-```powershell
-$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
-$env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
-& "$env:USERPROFILE\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\bin\gradle.bat" :app:assembleDebug
-```
-
-APK ciktisi:
-
-```text
-android\VideoWallPlayer.Android\app\build\outputs\apk\debug\app-debug.apk
-```
-
-## Visual Studio ile acma
-
-Visual Studio'da su dosyayi acin:
-
-```text
-VideoWallPlayer.sln
-```
-
-Ana proje:
-
-```text
-native\VideoWallPlayer.Native\VideoWallPlayer.Native.csproj
-```
-
-## Native Windows EXE
-
-Hazir calistirilacak dosya:
-
-```text
-dist-native\VideoWallPlayer.exe
-```
-
-Exe ciktisini yeniden almak:
-
-```powershell
-dotnet publish native\VideoWallPlayer.Native\VideoWallPlayer.Native.csproj -c Release -r win-x64 --self-contained true -o dist-native
-```
-
-Sahada kullanirken videolari exe yanindaki `videos` klasorune koyabilirsiniz veya uygulama arayuzunden playlist olusturabilirsiniz.
-
-## Gelistirme
-
-Derleme:
-
-```powershell
-dotnet build VideoWallPlayer.sln -c Release
-```
-
-Calistirma:
-
-```powershell
-dotnet run --project native\VideoWallPlayer.Native\VideoWallPlayer.Native.csproj
-```
-
-## Eski Electron prototipi
-
-Electron prototipini calistirmak icin:
-
-```powershell
-npm install
-npm start
-```
-
-Electron portable cikti almak icin:
-
-```powershell
-npm.cmd run build:exe
-```
+<https://github.com/monocosmos/VideoWallPlayer>

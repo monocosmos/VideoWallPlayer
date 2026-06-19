@@ -20,10 +20,12 @@ Android icin VLC/libVLC tabanli tam ekran video wall oynatici.
 Bu makinede Android Studio JBR ve Android SDK kullaniliyor:
 
 ```powershell
+Push-Location android_app
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
 $env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
 & "$env:USERPROFILE\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\bin\gradle.bat" :app:assembleDebug
+Pop-Location
 ```
 
 Cikti:
@@ -32,8 +34,24 @@ Cikti:
 app\build\outputs\apk\debug\app-debug.apk
 ```
 
-Repo kokune kopyalanmis hazir cikti:
+Uygulama klasorune kopyalanmis hazir cikti:
 
 ```text
 dist-android\VideoWallPlayer-android-debug.apk
+```
+
+## Android Studio ile Acma
+
+Android Studio'da su klasoru acin:
+
+```text
+android_app
+```
+
+## Wiki
+
+Android dokumanlari:
+
+```text
+android_app\wiki\Home.md
 ```
