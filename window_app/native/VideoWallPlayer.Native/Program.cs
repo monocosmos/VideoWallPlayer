@@ -82,7 +82,7 @@ internal sealed class AppSettings
     public GpuPreferenceMode GpuPreference { get; set; } = GpuPreferenceMode.WindowsDefault;
     public string? NamedGpu { get; set; }
     public int FileCachingMs { get; set; } = 3000;
-    public string VideoDirectory { get; set; } = Path.Combine(AppContext.BaseDirectory, "videos");
+    public string VideoDirectory { get; set; } = SettingsStore.DefaultVideoDirectory;
     public string Language { get; set; } = "tr";
 }
 
@@ -93,19 +93,47 @@ internal static class SettingsStore
         WriteIndented = true
     };
 
-    public static string SettingsPath => Path.Combine(AppContext.BaseDirectory, "settings.json");
+    public static string SettingsDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Nodera Software",
+        "VideoWallPlayer");
+
+    public static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
+
+    public static string LegacySettingsPath => Path.Combine(AppContext.BaseDirectory, "settings.json");
+
+    public static string DefaultVideoDirectory
+    {
+        get
+        {
+            var videos = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+            if (string.IsNullOrWhiteSpace(videos))
+            {
+                videos = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+
+            return Path.Combine(videos, "VideoWallPlayer");
+        }
+    }
 
     public static AppSettings Load()
     {
         try
         {
-            if (!File.Exists(SettingsPath))
+            var settingsPath = File.Exists(SettingsPath)
+                ? SettingsPath
+                : File.Exists(LegacySettingsPath)
+                    ? LegacySettingsPath
+                    : null;
+
+            if (settingsPath is null)
             {
                 return new AppSettings();
             }
 
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath), JsonOptions) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(settingsPath), JsonOptions) ?? new AppSettings();
             settings.Language = string.IsNullOrWhiteSpace(settings.Language) ? "tr" : settings.Language;
+            settings.VideoDirectory = IsProgramFilesPath(settings.VideoDirectory) ? DefaultVideoDirectory : settings.VideoDirectory;
             return settings;
         }
         catch
@@ -116,8 +144,20 @@ internal static class SettingsStore
 
     public static void Save(AppSettings settings)
     {
-        Directory.CreateDirectory(AppContext.BaseDirectory);
+        Directory.CreateDirectory(SettingsDirectory);
         File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+    }
+
+    private static bool IsProgramFilesPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return true;
+        }
+
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        return !string.IsNullOrWhiteSpace(programFiles) &&
+            path.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase);
     }
 }
 
