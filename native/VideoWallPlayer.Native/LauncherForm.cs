@@ -2,6 +2,20 @@ namespace VideoWallPlayer.Native;
 
 public sealed partial class LauncherForm : Form
 {
+    private const int ResizeGripSize = 8;
+    private const int TitleBarHeight = 38;
+    private const int WmNclButtonDown = 0x00A1;
+    private const int WmNcHitTest = 0x0084;
+    private const int HtCaption = 0x02;
+    private const int HtLeft = 10;
+    private const int HtRight = 11;
+    private const int HtTop = 12;
+    private const int HtTopLeft = 13;
+    private const int HtTopRight = 14;
+    private const int HtBottom = 15;
+    private const int HtBottomLeft = 16;
+    private const int HtBottomRight = 17;
+
     private static readonly Color BackgroundColor = Color.FromArgb(17, 20, 28);
     private static readonly Color SurfaceColor = Color.FromArgb(25, 30, 40);
     private static readonly Color FieldColor = Color.FromArgb(12, 15, 22);
@@ -12,6 +26,12 @@ public sealed partial class LauncherForm : Form
 
     private readonly AppSettings _settings;
     private readonly Localizer _localizer;
+
+    private Panel? _titleBarPanel;
+    private Label? _titleBarLabel;
+    private Button? _minimizeButton;
+    private Button? _maximizeButton;
+    private Button? _closeButton;
 
     private ListBox _playlistList => playlistListBox;
     private ComboBox _languageCombo => languageComboBox;
@@ -50,9 +70,11 @@ public sealed partial class LauncherForm : Form
     {
         Font = new Font("Segoe UI", 11F);
         MinimumSize = new Size(960, 620);
+        FormBorderStyle = FormBorderStyle.None;
+        DoubleBuffered = true;
         BackColor = BackgroundColor;
         rootTableLayoutPanel.BackColor = BackgroundColor;
-        rootTableLayoutPanel.Padding = new Padding(24);
+        rootTableLayoutPanel.Padding = new Padding(24, 20, 24, 24);
         playlistButtonsFlowLayoutPanel.WrapContents = true;
         playlistButtonsFlowLayoutPanel.AutoSize = true;
         playlistButtonsFlowLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -133,17 +155,18 @@ public sealed partial class LauncherForm : Form
             moveDownButton, saveSettingsButton, exitButton
         })
         {
-            StyleButton(button, Color.FromArgb(38, 48, 64), Color.FromArgb(48, 62, 82), BorderColor, 116, 38);
+            StyleButton(button, Color.FromArgb(38, 48, 64), Color.FromArgb(48, 62, 82), BorderColor, 92, 32);
         }
 
-        StyleButton(playButton, AccentColor, AccentHoverColor, Color.FromArgb(91, 246, 247), 194, 46);
+        StyleButton(playButton, AccentColor, AccentHoverColor, Color.FromArgb(91, 246, 247), 150, 36);
         playButton.FlatStyle = FlatStyle.Flat;
-        playButton.Font = new Font("Segoe UI Semibold", 11.5F);
+        playButton.Font = new Font("Segoe UI Semibold", 10.5F);
         playButton.ForeColor = Color.FromArgb(4, 19, 27);
         playButton.Margin = new Padding(0, 0, 8, 8);
         playButton.UseVisualStyleBackColor = false;
-        playButton.Width = 194;
+        playButton.Width = 150;
 
+        InstallCustomTitleBar();
         Resize += (_, _) => ApplyResponsiveStyle();
         ApplyResponsiveStyle();
     }
@@ -157,12 +180,12 @@ public sealed partial class LauncherForm : Form
         button.FlatAppearance.MouseDownBackColor = hoverColor;
         button.FlatAppearance.MouseOverBackColor = hoverColor;
         button.FlatStyle = FlatStyle.Flat;
-        button.Font = new Font("Segoe UI Semibold", 10.5F);
+        button.Font = new Font("Segoe UI Semibold", 9.5F);
         button.ForeColor = Color.White;
         button.Height = height;
-        button.Margin = new Padding(0, 0, 8, 8);
+        button.Margin = new Padding(0, 0, 8, 7);
         button.MinimumSize = new Size(minWidth, height);
-        button.Padding = new Padding(12, 0, 12, 0);
+        button.Padding = new Padding(10, 0, 10, 0);
         button.UseVisualStyleBackColor = false;
         button.Resize += (_, _) => ApplyRoundedRegion(button);
         ApplyRoundedRegion(button);
@@ -200,17 +223,151 @@ public sealed partial class LauncherForm : Form
     private void ApplyResponsiveStyle()
     {
         var compact = ClientSize.Width < 1080;
-        rootTableLayoutPanel.Padding = compact ? new Padding(16) : new Padding(24);
-        rootTableLayoutPanel.RowStyles[0].Height = compact ? 118F : 150F;
+        rootTableLayoutPanel.Padding = compact ? new Padding(16, 14, 16, 16) : new Padding(24, 20, 24, 24);
+        rootTableLayoutPanel.RowStyles[0].Height = compact ? 112F : 132F;
         brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 88F : 118F;
-        brandTableLayoutPanel.ColumnStyles[2].Width = compact ? 108F : 148F;
-        titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 28F);
+        brandTableLayoutPanel.ColumnStyles[2].Width = compact ? 96F : 126F;
+        titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 26F);
         subtitleLabel.Font = new Font("Segoe UI", compact ? 10F : 11F);
+    }
+
+    private void InstallCustomTitleBar()
+    {
+        if (_titleBarPanel is not null)
+        {
+            return;
+        }
+
+        _titleBarPanel = new Panel
+        {
+            BackColor = Color.FromArgb(12, 15, 21),
+            Dock = DockStyle.Top,
+            Height = TitleBarHeight,
+            Padding = new Padding(14, 0, 8, 0)
+        };
+
+        var iconLabel = new Label
+        {
+            AutoSize = false,
+            Dock = DockStyle.Left,
+            Font = new Font("Segoe UI Symbol", 11F),
+            ForeColor = AccentColor,
+            Text = "■",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Width = 18
+        };
+
+        _titleBarLabel = new Label
+        {
+            AutoSize = false,
+            Dock = DockStyle.Fill,
+            Font = new Font("Segoe UI Semibold", 9.5F),
+            ForeColor = Color.FromArgb(221, 229, 241),
+            Text = Text,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        _closeButton = CreateChromeButton("x", (_, _) => Close(), true);
+        _maximizeButton = CreateChromeButton("□", (_, _) => ToggleWindowState());
+        _minimizeButton = CreateChromeButton("−", (_, _) => WindowState = FormWindowState.Minimized);
+
+        _titleBarPanel.Controls.Add(_titleBarLabel);
+        _titleBarPanel.Controls.Add(iconLabel);
+        _titleBarPanel.Controls.Add(_closeButton);
+        _titleBarPanel.Controls.Add(_maximizeButton);
+        _titleBarPanel.Controls.Add(_minimizeButton);
+        _titleBarPanel.MouseDown += TitleBar_MouseDown;
+        _titleBarPanel.DoubleClick += (_, _) => ToggleWindowState();
+        _titleBarLabel.MouseDown += TitleBar_MouseDown;
+        _titleBarLabel.DoubleClick += (_, _) => ToggleWindowState();
+        iconLabel.MouseDown += TitleBar_MouseDown;
+
+        Controls.Remove(rootTableLayoutPanel);
+        Controls.Add(rootTableLayoutPanel);
+        Controls.Add(_titleBarPanel);
+        _titleBarPanel.BringToFront();
+    }
+
+    private static Button CreateChromeButton(string text, EventHandler clickHandler, bool closeButton = false)
+    {
+        var button = new Button
+        {
+            BackColor = Color.Transparent,
+            Cursor = Cursors.Hand,
+            Dock = DockStyle.Right,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10F),
+            ForeColor = Color.FromArgb(218, 226, 238),
+            Height = TitleBarHeight,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            Text = text,
+            UseVisualStyleBackColor = false,
+            Width = 44
+        };
+
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = closeButton ? Color.FromArgb(206, 54, 74) : Color.FromArgb(31, 39, 52);
+        button.FlatAppearance.MouseDownBackColor = closeButton ? Color.FromArgb(174, 43, 60) : Color.FromArgb(41, 51, 68);
+        button.Click += clickHandler;
+        return button;
+    }
+
+    private void TitleBar_MouseDown(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left)
+        {
+            return;
+        }
+
+        NativeMethods.ReleaseCapture();
+        NativeMethods.SendMessage(Handle, WmNclButtonDown, HtCaption, 0);
+    }
+
+    private void ToggleWindowState()
+    {
+        WindowState = WindowState == FormWindowState.Maximized
+            ? FormWindowState.Normal
+            : FormWindowState.Maximized;
+    }
+
+    protected override void WndProc(ref Message message)
+    {
+        base.WndProc(ref message);
+
+        if (message.Msg != WmNcHitTest || WindowState == FormWindowState.Maximized)
+        {
+            return;
+        }
+
+        var cursor = PointToClient(new Point(message.LParam.ToInt32()));
+        var left = cursor.X <= ResizeGripSize;
+        var right = cursor.X >= ClientSize.Width - ResizeGripSize;
+        var top = cursor.Y <= ResizeGripSize;
+        var bottom = cursor.Y >= ClientSize.Height - ResizeGripSize;
+
+        message.Result = (IntPtr)((left, right, top, bottom) switch
+        {
+            (true, false, true, false) => HtTopLeft,
+            (false, true, true, false) => HtTopRight,
+            (true, false, false, true) => HtBottomLeft,
+            (false, true, false, true) => HtBottomRight,
+            (true, false, false, false) => HtLeft,
+            (false, true, false, false) => HtRight,
+            (false, false, true, false) => HtTop,
+            (false, false, false, true) => HtBottom,
+            _ => message.Result.ToInt32()
+        });
     }
 
     private void ApplyLocalizedText()
     {
         Text = _localizer.T("app.title");
+        if (_titleBarLabel is not null)
+        {
+            _titleBarLabel.Text = Text;
+        }
+
         titleLabel.Text = _localizer.T("app.title");
         subtitleLabel.Text = _localizer.T("brand.subtitle");
         playlistHeaderLabel.Text = _localizer.T("playlist");

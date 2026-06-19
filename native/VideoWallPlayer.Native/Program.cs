@@ -253,6 +253,7 @@ internal sealed class VideoWallForm : Form
     private List<int> _playOrder = [];
     private int _orderIndex;
     private bool _isClosing;
+    private bool _isPaused;
 
     public VideoWallForm(AppSettings settings)
     {
@@ -356,6 +357,13 @@ internal sealed class VideoWallForm : Form
                 return;
             }
 
+            if (e.KeyCode == Keys.Space)
+            {
+                e.Handled = true;
+                TogglePause();
+                return;
+            }
+
             if (_settings.Kiosk)
             {
                 e.Handled = true;
@@ -399,6 +407,25 @@ internal sealed class VideoWallForm : Form
         _activeMedia = CreateMedia(file);
         _activeVideoView.BringToFront();
         _activeMediaPlayer.Play(_activeMedia);
+        _isPaused = false;
+    }
+
+    private void TogglePause()
+    {
+        if (_sourcePlaylist.Count == 0 || _activeMedia is null)
+        {
+            return;
+        }
+
+        _isPaused = !_isPaused;
+        _activeMediaPlayer.SetPause(_isPaused);
+
+        if (_standbyPlaying)
+        {
+            _standbyMediaPlayer.SetPause(_isPaused);
+        }
+
+        Cursor.Hide();
     }
 
     private void PrepareNextWhenCloseToEnd()
@@ -668,4 +695,10 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll")]
     private static extern ExecutionState SetThreadExecutionState(ExecutionState esFlags);
+
+    [DllImport("user32.dll")]
+    public static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
 }
