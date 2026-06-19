@@ -11,6 +11,8 @@ dist-android/
 window_app/dist/
 window_app/out/
 window_app/dist-native/
+window_app/dist-installer/
+window_app/dist-packages/
 android_app/dist-android/
 native/**/bin/
 native/**/obj/

@@ -57,6 +57,25 @@ Cikti:
 window_app\dist-native\VideoWallPlayer.exe
 ```
 
+## Portable ve Kurulum Paketi Uretme
+
+Repo kokunden:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File window_app\scripts\build-windows-packages.ps1
+```
+
+Ciktilar:
+
+```text
+releases\VideoWallPlayer-Windows-Portable-x64.zip
+releases\VideoWallPlayer-Windows-Setup-x64.exe
+```
+
+Portable paket klasore acilip dogrudan calistirilir. Setup paketi uygulamayi
+`C:\Program Files\VideoWallPlayer` altina kurar, masaustu ve Start Menu kisayolu
+olusturur, Windows uygulama kaldirma listesine uninstall kaydi ekler.
+
 ## Gelistirme
 
 Derleme:
