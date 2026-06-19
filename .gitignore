@@ -6,5 +6,9 @@ npm-debug.log*
 dist/
 out/
 dist-native/
+dist-android/
 native/**/bin/
 native/**/obj/
+android/**/.gradle/
+android/**/build/
+android/**/local.properties

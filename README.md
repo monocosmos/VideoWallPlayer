@@ -3,6 +3,7 @@
 Windows video wall ekranlari icin kenarliksiz, yazisiz, kontrol cubuksuz tam ekran video oynatici.
 
 Ana uygulama `native` klasorundeki Windows native VLC/libVLC tabanli surumdur. `src` klasoru eski Electron prototipini icerir.
+Android APK projesi `android/VideoWallPlayer.Android` klasorundedir.
 
 ## Ozellikler
 
@@ -18,6 +19,37 @@ Ana uygulama `native` klasorundeki Windows native VLC/libVLC tabanli surumdur. `
 - 20 dil secenegi
 - VLC/libVLC codec destegi
 - Videolar arasi daha puruzsuz gecis icin cift oynaticili on hazirlama
+
+## Android APK
+
+Android uygulamasi da VLC/libVLC tabanlidir. Sistem dosya secicisiyle coklu video secimi yapar, playlisti saklar, tam ekran oynatir, liste bitince basa donebilir, karisik oynatabilir ve video ekraninda `Space` tusuyla duraklat/devam ettir yapar.
+
+Hazir debug APK:
+
+```text
+dist-android\VideoWallPlayer-android-debug.apk
+```
+
+Android Studio ile acilacak proje:
+
+```text
+android\VideoWallPlayer.Android
+```
+
+APK yeniden uretmek icin:
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+$env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
+& "$env:USERPROFILE\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\bin\gradle.bat" :app:assembleDebug
+```
+
+APK ciktisi:
+
+```text
+android\VideoWallPlayer.Android\app\build\outputs\apk\debug\app-debug.apk
+```
 
 ## Visual Studio ile acma
 
