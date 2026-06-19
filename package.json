@@ -1,0 +1,40 @@
+{
+  "name": "videowallplayer",
+  "version": "1.0.0",
+  "description": "Borderless fullscreen playlist video player for hotel video walls.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "kiosk": "electron . --kiosk",
+    "check": "node src/check-videos.js",
+    "build:exe": "electron-builder --win portable --x64 && node src/prepare-dist.js"
+  },
+  "build": {
+    "appId": "com.videowallplayer.app",
+    "productName": "VideoWallPlayer",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "VideoWallPlayer-${version}-${arch}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.0.12"
+  }
+}

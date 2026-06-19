@@ -1,0 +1,10 @@
+node_modules/
+.vs/
+videos/*
+!videos/.gitkeep
+npm-debug.log*
+dist/
+out/
+dist-native/
+native/**/bin/
+native/**/obj/
