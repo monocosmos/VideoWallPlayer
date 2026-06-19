@@ -8,6 +8,7 @@
     <AssemblyName>VideoWallPlayer</AssemblyName>
     <RootNamespace>VideoWallPlayer.Native</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
   <ItemGroup>

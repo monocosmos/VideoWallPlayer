@@ -58,6 +58,7 @@ public sealed partial class LauncherForm : Form
         Text = _localizer.T("app.title");
         RightToLeft = _localizer.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
         RightToLeftLayout = _localizer.IsRightToLeft;
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? Icon;
 
         ApplyRuntimeStyle();
         ApplyLocalizedText();
