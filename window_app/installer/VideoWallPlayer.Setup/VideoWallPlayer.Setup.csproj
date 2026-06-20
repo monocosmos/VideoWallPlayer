@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>VideoWallPlayerSetup</AssemblyName>
+    <RootNamespace>VideoWallPlayer.Setup</RootNamespace>
+    <ApplicationIcon>..\..\native\VideoWallPlayer.Native\Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Payload\VideoWallPlayer-Windows-Portable-x64.zip" LogicalName="Payload.zip" />
+  </ItemGroup>
+</Project>

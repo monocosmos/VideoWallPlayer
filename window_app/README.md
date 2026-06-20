@@ -72,9 +72,11 @@ releases\VideoWallPlayer-Windows-Portable-x64.zip
 releases\VideoWallPlayer-Windows-Setup-x64.exe
 ```
 
-Portable paket klasore acilip dogrudan calistirilir. Setup paketi uygulamayi
+Portable paket klasore acilip dogrudan calistirilir. Setup paketi tek EXE,
+bagimsiz ve grafik arayuzlu kurulum sihirbazidir; uygulamayi
 `C:\Program Files\VideoWallPlayer` altina kurar, masaustu ve Start Menu kisayolu
-olusturur, Windows uygulama kaldirma listesine uninstall kaydi ekler.
+olusturur, Windows uygulama kaldirma listesine uninstall kaydi ekler. Kurulum
+artik cmd veya PowerShell penceresi acmadan calisir.
 
 ## Gelistirme
 

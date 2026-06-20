@@ -18,6 +18,9 @@ native/**/bin/
 native/**/obj/
 window_app/native/**/bin/
 window_app/native/**/obj/
+window_app/installer/VideoWallPlayer.Setup/bin/
+window_app/installer/VideoWallPlayer.Setup/obj/
+window_app/installer/VideoWallPlayer.Setup/Payload/*.zip
 android/**/.gradle/
 android/**/build/
 android/**/local.properties
