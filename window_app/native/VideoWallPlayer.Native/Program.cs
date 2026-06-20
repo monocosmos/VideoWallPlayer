@@ -294,6 +294,7 @@ internal sealed class VideoWallForm : Form
     private int _orderIndex;
     private bool _isClosing;
     private bool _isPaused;
+    private bool _playbackCursorHidden;
 
     public VideoWallForm(AppSettings settings)
     {
@@ -342,7 +343,7 @@ internal sealed class VideoWallForm : Form
     {
         base.OnShown(e);
         NativeMethods.PreventDisplaySleep();
-        Cursor.Hide();
+        HidePlaybackCursor();
         Activate();
         PlayCurrent();
         _prepareNextTimer.Start();
@@ -352,7 +353,7 @@ internal sealed class VideoWallForm : Form
     {
         _isClosing = true;
         NativeMethods.AllowDisplaySleep();
-        Cursor.Show();
+        ShowLauncherCursor();
         base.OnFormClosing(e);
     }
 
@@ -465,7 +466,23 @@ internal sealed class VideoWallForm : Form
             _standbyMediaPlayer.SetPause(_isPaused);
         }
 
-        Cursor.Hide();
+        HidePlaybackCursor();
+    }
+
+    private void HidePlaybackCursor()
+    {
+        if (_playbackCursorHidden)
+        {
+            return;
+        }
+
+        _playbackCursorHidden = NativeMethods.HideCursorIfVisible();
+    }
+
+    private void ShowLauncherCursor()
+    {
+        NativeMethods.EnsureCursorVisible();
+        _playbackCursorHidden = false;
     }
 
     private void PrepareNextWhenCloseToEnd()
@@ -715,12 +732,35 @@ internal sealed class VideoWallForm : Form
 
 internal static class NativeMethods
 {
+    private const int CursorShowing = 0x00000001;
+    private const int DwmwaUseImmersiveDarkMode = 20;
+    private const int DwmwaUseImmersiveDarkModeLegacy = 19;
+    private const int DwmwaBorderColor = 34;
+    private const int DwmwaCaptionColor = 35;
+    private const int DwmwaTextColor = 36;
+
     [Flags]
     private enum ExecutionState : uint
     {
         Continuous = 0x80000000,
         SystemRequired = 0x00000001,
         DisplayRequired = 0x00000002
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CursorInfo
+    {
+        public int Size;
+        public int Flags;
+        public IntPtr Cursor;
+        public NativePoint ScreenPosition;
     }
 
     public static void PreventDisplaySleep()
@@ -733,8 +773,64 @@ internal static class NativeMethods
         SetThreadExecutionState(ExecutionState.Continuous);
     }
 
+    public static void ApplyDarkWindowFrame(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var enabled = 1;
+        _ = DwmSetWindowAttribute(handle, DwmwaUseImmersiveDarkMode, ref enabled, sizeof(int));
+        _ = DwmSetWindowAttribute(handle, DwmwaUseImmersiveDarkModeLegacy, ref enabled, sizeof(int));
+
+        var frameColor = 0x00150F0C;
+        var textColor = 0x00F1E5DD;
+        _ = DwmSetWindowAttribute(handle, DwmwaCaptionColor, ref frameColor, sizeof(int));
+        _ = DwmSetWindowAttribute(handle, DwmwaBorderColor, ref frameColor, sizeof(int));
+        _ = DwmSetWindowAttribute(handle, DwmwaTextColor, ref textColor, sizeof(int));
+    }
+
+    public static bool HideCursorIfVisible()
+    {
+        if (!IsCursorVisible())
+        {
+            return false;
+        }
+
+        ShowCursor(false);
+        return true;
+    }
+
+    public static void EnsureCursorVisible()
+    {
+        for (var i = 0; i < 10 && !IsCursorVisible(); i++)
+        {
+            ShowCursor(true);
+        }
+    }
+
+    private static bool IsCursorVisible()
+    {
+        var info = new CursorInfo
+        {
+            Size = Marshal.SizeOf<CursorInfo>()
+        };
+
+        return GetCursorInfo(ref info) && (info.Flags & CursorShowing) == CursorShowing;
+    }
+
     [DllImport("kernel32.dll")]
     private static extern ExecutionState SetThreadExecutionState(ExecutionState esFlags);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int attributeValue, int attributeSize);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorInfo(ref CursorInfo cursorInfo);
+
+    [DllImport("user32.dll")]
+    private static extern int ShowCursor(bool show);
 
     [DllImport("user32.dll")]
     public static extern bool ReleaseCapture();

@@ -71,7 +71,7 @@ public sealed partial class LauncherForm : Form
     {
         Font = new Font("Segoe UI", 11F);
         MinimumSize = new Size(960, 620);
-        FormBorderStyle = FormBorderStyle.None;
+        FormBorderStyle = FormBorderStyle.Sizable;
         DoubleBuffered = true;
         BackColor = BackgroundColor;
         rootTableLayoutPanel.BackColor = BackgroundColor;
@@ -168,9 +168,14 @@ public sealed partial class LauncherForm : Form
         playButton.UseVisualStyleBackColor = false;
         playButton.Width = 150;
 
-        InstallCustomTitleBar();
         Resize += (_, _) => ApplyResponsiveStyle();
         ApplyResponsiveStyle();
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        NativeMethods.ApplyDarkWindowFrame(Handle);
     }
 
     private static void StyleButton(Button button, Color backColor, Color hoverColor, Color borderColor, int minWidth, int height)
@@ -226,8 +231,8 @@ public sealed partial class LauncherForm : Form
     {
         var compact = ClientSize.Width < 1080;
         rootTableLayoutPanel.Padding = compact ? new Padding(16, 14, 16, 16) : new Padding(24, 20, 24, 24);
-        rootTableLayoutPanel.RowStyles[0].Height = compact ? 112F : 132F;
-        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 92F : 118F;
+        rootTableLayoutPanel.RowStyles[0].Height = compact ? 124F : 150F;
+        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 124F : 150F;
         brandTableLayoutPanel.ColumnStyles[2].Width = 0F;
         titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 26F);
         subtitleLabel.Font = new Font("Segoe UI", compact ? 10F : 11F);
@@ -365,7 +370,9 @@ public sealed partial class LauncherForm : Form
     {
         base.WndProc(ref message);
 
-        if (message.Msg != WmNcHitTest || WindowState == FormWindowState.Maximized)
+        if (FormBorderStyle != FormBorderStyle.None ||
+            message.Msg != WmNcHitTest ||
+            WindowState == FormWindowState.Maximized)
         {
             return;
         }
@@ -1055,6 +1062,7 @@ public sealed partial class LauncherForm : Form
         Hide();
         using var player = new VideoWallForm(settings);
         player.ShowDialog(this);
+        NativeMethods.EnsureCursorVisible();
         Show();
         Activate();
     }
