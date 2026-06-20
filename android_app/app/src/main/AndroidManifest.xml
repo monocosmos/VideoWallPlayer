@@ -8,8 +8,8 @@
 
     <application
         android:allowBackup="false"
-        android:banner="@drawable/brand_logo"
-        android:icon="@drawable/brand_logo"
+        android:banner="@drawable/brand_model"
+        android:icon="@drawable/brand_model"
         android:label="VideoWallPlayer"
         android:resizeableActivity="true"
         android:supportsRtl="true"

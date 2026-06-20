@@ -1,12 +1,18 @@
 package com.monocosmos.videowallplayer;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -55,6 +61,12 @@ public final class MainActivity extends Activity {
     private static final int RepeatAll = 0;
     private static final int RepeatOne = 1;
     private static final int RepeatNone = 2;
+    private static final int BackgroundColor = Color.rgb(13, 17, 25);
+    private static final int SurfaceColor = Color.rgb(24, 30, 42);
+    private static final int SurfaceAltColor = Color.rgb(15, 20, 30);
+    private static final int AccentColor = Color.rgb(0, 202, 218);
+    private static final int AccentHoverColor = Color.rgb(20, 226, 238);
+    private static final int TextMutedColor = Color.rgb(172, 187, 205);
 
     private final ArrayList<String> playlist = new ArrayList<>();
     private final ArrayList<Integer> playOrder = new ArrayList<>();
@@ -76,6 +88,7 @@ public final class MainActivity extends Activity {
 
     private LibVLC libVlc;
     private MediaPlayer mediaPlayer;
+    private AssetFileDescriptor currentMediaDescriptor;
     private int orderIndex;
     private boolean playerVisible;
     private boolean paused;
@@ -167,13 +180,13 @@ public final class MainActivity extends Activity {
 
     private void buildUi() {
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(12, 15, 22));
+        root.setBackgroundColor(BackgroundColor);
         setContentView(root);
 
         launcherView = new LinearLayout(this);
         launcherView.setOrientation(LinearLayout.VERTICAL);
-        launcherView.setPadding(dp(20), dp(18), dp(20), dp(18));
-        launcherView.setBackgroundColor(Color.rgb(17, 20, 28));
+        launcherView.setPadding(dp(28), dp(24), dp(28), dp(24));
+        launcherView.setBackgroundColor(BackgroundColor);
         root.addView(launcherView, new FrameLayout.LayoutParams(-1, -1));
 
         buildHeader();
@@ -191,29 +204,24 @@ public final class MainActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setPadding(0, 0, 0, dp(18));
-        launcherView.addView(header, new LinearLayout.LayoutParams(-1, dp(112)));
+        header.setPadding(0, 0, 0, dp(22));
+        launcherView.addView(header, new LinearLayout.LayoutParams(-1, dp(142)));
 
         ImageView logo = new ImageView(this);
-        logo.setImageResource(getResources().getIdentifier("brand_logo", "drawable", getPackageName()));
+        logo.setImageResource(getResources().getIdentifier("brand_model", "drawable", getPackageName()));
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        header.addView(logo, new LinearLayout.LayoutParams(dp(92), dp(92)));
+        header.addView(logo, new LinearLayout.LayoutParams(dp(132), dp(132)));
 
         LinearLayout titleArea = new LinearLayout(this);
         titleArea.setOrientation(LinearLayout.VERTICAL);
         titleArea.setGravity(Gravity.CENTER_VERTICAL);
-        titleArea.setPadding(dp(16), 0, dp(16), 0);
+        titleArea.setPadding(dp(22), 0, dp(16), 0);
         header.addView(titleArea, new LinearLayout.LayoutParams(0, -1, 1));
 
-        TextView title = text("VideoWallPlayer", 28, Color.WHITE, true);
+        TextView title = text("VideoWallPlayer", 34, Color.WHITE, true);
         titleArea.addView(title);
-        TextView subtitle = text("Kenar, kontrol cubugu ve metin olmadan tam ekran video wall oynatma", 14, Color.rgb(161, 237, 240), false);
+        TextView subtitle = text("Kenar, kontrol cubugu ve metin olmadan tam ekran video wall oynatma", 15, Color.rgb(161, 237, 240), false);
         titleArea.addView(subtitle);
-
-        ImageView model = new ImageView(this);
-        model.setImageResource(getResources().getIdentifier("brand_model", "drawable", getPackageName()));
-        model.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        header.addView(model, new LinearLayout.LayoutParams(dp(104), dp(104)));
     }
 
     private void buildLauncherContent() {
@@ -224,26 +232,43 @@ public final class MainActivity extends Activity {
         LinearLayout playlistPanel = panel();
         columns.addView(playlistPanel, new LinearLayout.LayoutParams(0, -1, 1.55f));
 
-        Space(columns, 16, 1);
+        Space(columns, 20, 1);
 
         ScrollView settingsScroll = new ScrollView(this);
         LinearLayout settingsPanel = panel();
         settingsScroll.addView(settingsPanel);
         columns.addView(settingsScroll, new LinearLayout.LayoutParams(0, -1, 1));
 
-        playlistPanel.addView(text("Oynatma Listesi", 22, Color.WHITE, true));
+        playlistPanel.addView(text("Oynatma Listesi", 24, Color.WHITE, true));
 
-        playlistAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, displayPlaylist());
+        playlistAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, displayPlaylist()) {
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView row = (TextView) super.getView(position, convertView, parent);
+                row.setTextColor(Color.WHITE);
+                row.setTextSize(15);
+                row.setSingleLine(true);
+                row.setPadding(dp(14), dp(10), dp(14), dp(10));
+                row.setBackgroundColor(position == playlistListView.getCheckedItemPosition()
+                    ? Color.rgb(20, 58, 68)
+                    : SurfaceAltColor);
+                return row;
+            }
+        };
         playlistListView = new ListView(this);
         playlistListView.setAdapter(playlistAdapter);
-        playlistListView.setBackgroundColor(Color.rgb(8, 11, 17));
-        playlistListView.setDivider(null);
+        playlistListView.setBackground(rounded(SurfaceAltColor, 8, Color.rgb(48, 60, 78)));
+        playlistListView.setDividerHeight(dp(6));
+        playlistListView.setCacheColorHint(Color.TRANSPARENT);
         playlistListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        playlistPanel.addView(playlistListView, new LinearLayout.LayoutParams(-1, 0, 1));
+        playlistListView.setOnItemClickListener((parent, view, position, id) -> playlistAdapter.notifyDataSetChanged());
+        LinearLayout.LayoutParams listParams = new LinearLayout.LayoutParams(-1, 0, 1);
+        listParams.setMargins(0, dp(12), 0, 0);
+        playlistPanel.addView(playlistListView, listParams);
 
         LinearLayout playlistButtons = new LinearLayout(this);
         playlistButtons.setOrientation(LinearLayout.HORIZONTAL);
-        playlistButtons.setPadding(0, dp(12), 0, 0);
+        playlistButtons.setPadding(0, dp(14), 0, 0);
         playlistPanel.addView(playlistButtons);
 
         playlistButtons.addView(button("Video Ekle", v -> selectVideos(), false));
@@ -256,7 +281,7 @@ public final class MainActivity extends Activity {
         statusLabel.setPadding(0, dp(12), 0, 0);
         playlistPanel.addView(statusLabel);
 
-        settingsPanel.addView(text("Ayarlar", 22, Color.WHITE, true));
+        settingsPanel.addView(text("Ayarlar", 24, Color.WHITE, true));
 
         LinearLayout actionRow = new LinearLayout(this);
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -277,13 +302,21 @@ public final class MainActivity extends Activity {
         cachePicker.setMinValue(100);
         cachePicker.setMaxValue(10000);
         cachePicker.setValue(Math.max(100, prefs.getInt(KeyCache, 3000)));
+        cachePicker.setBackground(rounded(SurfaceAltColor, 6, Color.rgb(58, 70, 88)));
 
         settingsPanel.addView(field("Tekrar modu", repeatSpinner));
-        settingsPanel.addView(shuffleCheckBox);
-        settingsPanel.addView(mutedCheckBox);
+        LinearLayout optionRow = new LinearLayout(this);
+        optionRow.setOrientation(LinearLayout.HORIZONTAL);
+        optionRow.setPadding(0, dp(8), 0, dp(4));
+        optionRow.addView(shuffleCheckBox);
+        Space(optionRow, 16, 0);
+        optionRow.addView(mutedCheckBox);
+        settingsPanel.addView(optionRow);
         settingsPanel.addView(field("Donanim hizlandirma", hardwareSpinner));
         settingsPanel.addView(field("Onbellek (ms)", cachePicker));
-        settingsPanel.addView(text("Video ekraninda Space duraklatir/devam ettirir. Geri, Esc veya F11 oynatimdan cikar.", 13, Color.rgb(172, 187, 205), false));
+        TextView help = text("Video ekraninda Space duraklatir/devam ettirir. Geri, Esc veya F11 oynatimdan cikar.", 13, TextMutedColor, false);
+        help.setPadding(0, dp(12), 0, 0);
+        settingsPanel.addView(help);
 
         repeatSpinner.setSelection(prefs.getInt(KeyRepeat, RepeatAll));
         hardwareSpinner.setSelection(prefs.getInt(KeyHardware, 0));
@@ -295,8 +328,8 @@ public final class MainActivity extends Activity {
     private LinearLayout panel() {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(18), dp(16), dp(18), dp(16));
-        panel.setBackgroundColor(Color.rgb(25, 30, 40));
+        panel.setPadding(dp(22), dp(20), dp(22), dp(20));
+        panel.setBackground(rounded(SurfaceColor, 10, Color.rgb(38, 48, 64)));
         return panel;
     }
 
@@ -304,7 +337,7 @@ public final class MainActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(0, dp(12), 0, dp(8));
-        box.addView(text(label, 13, Color.rgb(172, 187, 205), false));
+        box.addView(text(label, 13, TextMutedColor, false));
         box.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         return box;
     }
@@ -314,6 +347,8 @@ public final class MainActivity extends Activity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, values);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        spinner.setBackground(rounded(SurfaceAltColor, 6, Color.rgb(58, 70, 88)));
+        spinner.setPadding(dp(8), 0, dp(8), 0);
         return spinner;
     }
 
@@ -321,6 +356,7 @@ public final class MainActivity extends Activity {
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText(label);
         checkBox.setTextColor(Color.WHITE);
+        checkBox.setTextSize(14);
         return checkBox;
     }
 
@@ -329,10 +365,13 @@ public final class MainActivity extends Activity {
         button.setText(label);
         button.setAllCaps(false);
         button.setTextColor(primary ? Color.rgb(4, 19, 27) : Color.WHITE);
-        button.setBackgroundColor(primary ? Color.rgb(0, 202, 218) : Color.rgb(38, 48, 64));
-        button.setMinHeight(dp(36));
-        button.setMinimumHeight(dp(36));
-        button.setPadding(dp(12), 0, dp(12), 0);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setTextSize(13);
+        button.setBackground(rounded(primary ? AccentColor : Color.rgb(38, 48, 64), 8, primary ? AccentHoverColor : Color.rgb(58, 70, 88)));
+        button.setMinHeight(dp(40));
+        button.setMinimumHeight(dp(40));
+        button.setMinWidth(primary ? dp(152) : dp(112));
+        button.setPadding(dp(14), 0, dp(14), 0);
         button.setOnClickListener(listener);
         return button;
     }
@@ -343,16 +382,24 @@ public final class MainActivity extends Activity {
         textView.setTextColor(color);
         textView.setTextSize(sp);
         if (bold) {
-            textView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
         }
         return textView;
+    }
+
+    private GradientDrawable rounded(int color, int radiusDp, int strokeColor) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(dp(radiusDp));
+        drawable.setStroke(dp(1), strokeColor);
+        return drawable;
     }
 
     private void Space(LinearLayout parent, int sizeDp, int weight) {
         View spacer = new View(this);
         LinearLayout.LayoutParams params = parent.getOrientation() == LinearLayout.HORIZONTAL
-            ? new LinearLayout.LayoutParams(dp(sizeDp), weight == 0 ? 1 : 0)
-            : new LinearLayout.LayoutParams(1, dp(sizeDp));
+            ? new LinearLayout.LayoutParams(weight == 0 ? dp(sizeDp) : 0, -1, weight)
+            : new LinearLayout.LayoutParams(-1, dp(sizeDp));
         parent.addView(spacer, params);
     }
 
@@ -439,8 +486,10 @@ public final class MainActivity extends Activity {
         mediaPlayer = new MediaPlayer(libVlc);
         mediaPlayer.attachViews(videoLayout, null, false, false);
         mediaPlayer.setEventListener(event -> {
-            if (event.type == MediaPlayer.Event.EndReached || event.type == MediaPlayer.Event.EncounteredError) {
+            if (event.type == MediaPlayer.Event.EndReached) {
                 runOnUiThread(this::playNextAfterEnd);
+            } else if (event.type == MediaPlayer.Event.EncounteredError) {
+                runOnUiThread(this::handlePlaybackError);
             }
         });
         mediaPlayer.setVolume(mutedCheckBox.isChecked() ? 0 : 100);
@@ -452,16 +501,58 @@ public final class MainActivity extends Activity {
         }
 
         Uri uri = Uri.parse(playlist.get(playOrder.get(orderIndex)));
-        Media media = new Media(libVlc, uri);
-        boolean hardware = hardwareSpinner.getSelectedItemPosition() != 1;
-        media.setHWDecoderEnabled(hardware, false);
-        media.addOption(":file-caching=" + cachePicker.getValue());
-        media.addOption(":network-caching=" + cachePicker.getValue());
-        mediaPlayer.setMedia(media);
-        media.release();
-        mediaPlayer.play();
-        paused = false;
-        hideSystemUi();
+        try {
+            Media media = createMedia(uri);
+            boolean hardware = hardwareSpinner.getSelectedItemPosition() != 1;
+            media.setHWDecoderEnabled(hardware, false);
+            media.addOption(":file-caching=" + cachePicker.getValue());
+            media.addOption(":network-caching=" + cachePicker.getValue());
+            mediaPlayer.setMedia(media);
+            media.release();
+            mediaPlayer.play();
+            paused = false;
+            hideSystemUi();
+        } catch (Exception ex) {
+            statusLabel.setText("Video acilamadi: " + displayName(uri));
+            handlePlaybackError();
+        }
+    }
+
+    private Media createMedia(Uri uri) throws Exception {
+        closeCurrentMediaDescriptor();
+
+        if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(uri.getScheme())) {
+            currentMediaDescriptor = getContentResolver().openAssetFileDescriptor(uri, "r");
+            if (currentMediaDescriptor == null) {
+                throw new IllegalStateException("Dosya izni alinamadi.");
+            }
+
+            return new Media(libVlc, currentMediaDescriptor);
+        }
+
+        if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme()) && uri.getPath() != null) {
+            return new Media(libVlc, uri.getPath());
+        }
+
+        return new Media(libVlc, uri);
+    }
+
+    private void handlePlaybackError() {
+        if (!playerVisible || playOrder.isEmpty() || orderIndex < 0 || orderIndex >= playOrder.size()) {
+            return;
+        }
+
+        Uri uri = Uri.parse(playlist.get(playOrder.get(orderIndex)));
+        statusLabel.setText("VLC bu videoyu oynatamadi: " + displayName(uri));
+        if (playOrder.size() <= 1) {
+            toast("Video oynatilamadi.");
+            showLauncher();
+            return;
+        }
+
+        toast("Video oynatilamadi, siradaki deneniyor.");
+        orderIndex = (orderIndex + 1) % playOrder.size();
+        playCurrent();
     }
 
     private void playNextAfterEnd() {
@@ -511,10 +602,24 @@ public final class MainActivity extends Activity {
             mediaPlayer = null;
         }
 
+        closeCurrentMediaDescriptor();
+
         if (libVlc != null) {
             libVlc.release();
             libVlc = null;
         }
+    }
+
+    private void closeCurrentMediaDescriptor() {
+        if (currentMediaDescriptor == null) {
+            return;
+        }
+
+        try {
+            currentMediaDescriptor.close();
+        } catch (Exception ignored) {
+        }
+        currentMediaDescriptor = null;
     }
 
     private void hideSystemUi() {
@@ -587,11 +692,29 @@ public final class MainActivity extends Activity {
     private List<String> displayPlaylist() {
         ArrayList<String> display = new ArrayList<>();
         for (String value : playlist) {
-            Uri uri = Uri.parse(value);
-            String label = uri.getLastPathSegment();
-            display.add(label == null ? value : label);
+            display.add(displayName(Uri.parse(value)));
         }
         return display;
+    }
+
+    private String displayName(Uri uri) {
+        if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(uri.getScheme())) {
+            try (Cursor cursor = getContentResolver().query(uri, new String[] {OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) {
+                        String value = cursor.getString(index);
+                        if (value != null && !value.isEmpty()) {
+                            return value;
+                        }
+                    }
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+
+        String label = uri.getLastPathSegment();
+        return label == null || label.isEmpty() ? uri.toString() : label;
     }
 
     private int dp(int value) {
