@@ -96,6 +96,7 @@ public sealed partial class LauncherForm : Form
         logoPictureBox.BackColor = BackgroundColor;
         modelPictureBox.BackColor = BackgroundColor;
         modelPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+        modelPictureBox.Visible = false;
 
         titleLabel.Font = new Font("Segoe UI Semibold", 28F);
         titleLabel.ForeColor = Color.White;
@@ -226,8 +227,8 @@ public sealed partial class LauncherForm : Form
         var compact = ClientSize.Width < 1080;
         rootTableLayoutPanel.Padding = compact ? new Padding(16, 14, 16, 16) : new Padding(24, 20, 24, 24);
         rootTableLayoutPanel.RowStyles[0].Height = compact ? 112F : 132F;
-        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 88F : 118F;
-        brandTableLayoutPanel.ColumnStyles[2].Width = compact ? 96F : 126F;
+        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 92F : 118F;
+        brandTableLayoutPanel.ColumnStyles[2].Width = 0F;
         titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 26F);
         subtitleLabel.Font = new Font("Segoe UI", compact ? 10F : 11F);
     }
@@ -244,18 +245,16 @@ public sealed partial class LauncherForm : Form
             BackColor = Color.FromArgb(12, 15, 21),
             Dock = DockStyle.Top,
             Height = TitleBarHeight,
-            Padding = new Padding(14, 0, 8, 0)
+            Padding = new Padding(14, 0, 0, 0)
         };
 
-        var iconLabel = new Label
+        var iconPictureBox = new PictureBox
         {
-            AutoSize = false,
             Dock = DockStyle.Left,
-            Font = new Font("Segoe UI Symbol", 11F),
-            ForeColor = AccentColor,
-            Text = "■",
-            TextAlign = ContentAlignment.MiddleLeft,
-            Width = 18
+            Image = CreateTitleBarIcon(Icon),
+            Margin = Padding.Empty,
+            SizeMode = PictureBoxSizeMode.CenterImage,
+            Width = 24
         };
 
         _titleBarLabel = new Label
@@ -268,20 +267,34 @@ public sealed partial class LauncherForm : Form
             TextAlign = ContentAlignment.MiddleLeft
         };
 
-        _closeButton = CreateChromeButton("x", (_, _) => Close(), true);
-        _maximizeButton = CreateChromeButton("□", (_, _) => ToggleWindowState());
-        _minimizeButton = CreateChromeButton("−", (_, _) => WindowState = FormWindowState.Minimized);
+        var buttonPanel = new FlowLayoutPanel
+        {
+            BackColor = Color.Transparent,
+            Dock = DockStyle.Right,
+            FlowDirection = FlowDirection.LeftToRight,
+            Height = TitleBarHeight,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            Width = 138,
+            WrapContents = false
+        };
+
+        _minimizeButton = CreateChromeButton("\uE921", (_, _) => WindowState = FormWindowState.Minimized);
+        _maximizeButton = CreateChromeButton("\uE922", (_, _) => ToggleWindowState());
+        _closeButton = CreateChromeButton("\uE8BB", (_, _) => Close(), true);
+
+        buttonPanel.Controls.Add(_minimizeButton);
+        buttonPanel.Controls.Add(_maximizeButton);
+        buttonPanel.Controls.Add(_closeButton);
 
         _titleBarPanel.Controls.Add(_titleBarLabel);
-        _titleBarPanel.Controls.Add(iconLabel);
-        _titleBarPanel.Controls.Add(_closeButton);
-        _titleBarPanel.Controls.Add(_maximizeButton);
-        _titleBarPanel.Controls.Add(_minimizeButton);
+        _titleBarPanel.Controls.Add(iconPictureBox);
+        _titleBarPanel.Controls.Add(buttonPanel);
         _titleBarPanel.MouseDown += TitleBar_MouseDown;
         _titleBarPanel.DoubleClick += (_, _) => ToggleWindowState();
         _titleBarLabel.MouseDown += TitleBar_MouseDown;
         _titleBarLabel.DoubleClick += (_, _) => ToggleWindowState();
-        iconLabel.MouseDown += TitleBar_MouseDown;
+        iconPictureBox.MouseDown += TitleBar_MouseDown;
 
         Controls.Remove(rootTableLayoutPanel);
         Controls.Add(rootTableLayoutPanel);
@@ -295,16 +308,16 @@ public sealed partial class LauncherForm : Form
         {
             BackColor = Color.Transparent,
             Cursor = Cursors.Hand,
-            Dock = DockStyle.Right,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 10F),
+            Font = new Font("Segoe MDL2 Assets", 9F),
             ForeColor = Color.FromArgb(218, 226, 238),
             Height = TitleBarHeight,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
             Text = text,
+            TextAlign = ContentAlignment.MiddleCenter,
             UseVisualStyleBackColor = false,
-            Width = 44
+            Width = 46
         };
 
         button.FlatAppearance.BorderSize = 0;
@@ -312,6 +325,22 @@ public sealed partial class LauncherForm : Form
         button.FlatAppearance.MouseDownBackColor = closeButton ? Color.FromArgb(174, 43, 60) : Color.FromArgb(41, 51, 68);
         button.Click += clickHandler;
         return button;
+    }
+
+    private static Image? CreateTitleBarIcon(Icon? icon)
+    {
+        if (icon is null)
+        {
+            return null;
+        }
+
+        using var source = icon.ToBitmap();
+        var target = new Bitmap(16, 16);
+        using var graphics = Graphics.FromImage(target);
+        graphics.Clear(Color.Transparent);
+        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        graphics.DrawImage(source, new Rectangle(0, 0, 16, 16));
+        return target;
     }
 
     private void TitleBar_MouseDown(object? sender, MouseEventArgs e)
@@ -403,8 +432,9 @@ public sealed partial class LauncherForm : Form
 
     private void LoadBrandImages()
     {
-        logoPictureBox.Image = LoadAssetImage("brand-logo.png");
-        modelPictureBox.Image = LoadAssetImage("brand-model.png");
+        logoPictureBox.Image = LoadAssetImage("brand-model.png");
+        modelPictureBox.Image = null;
+        modelPictureBox.Visible = false;
     }
 
     private static Image? LoadAssetImage(string fileName)
@@ -513,10 +543,9 @@ public sealed partial class LauncherForm : Form
 
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 128));
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 0));
 
-        var logo = BrandImage("brand-logo.png", 86);
-        var model = BrandImage("brand-model.png", 118);
+        var logo = BrandImage("brand-model.png", 96);
 
         var titlePanel = new TableLayoutPanel
         {
@@ -546,7 +575,6 @@ public sealed partial class LauncherForm : Form
 
         panel.Controls.Add(logo, 0, 0);
         panel.Controls.Add(titlePanel, 1, 0);
-        panel.Controls.Add(model, 2, 0);
 
         return panel;
     }
