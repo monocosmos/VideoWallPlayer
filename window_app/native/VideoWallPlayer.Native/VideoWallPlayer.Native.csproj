@@ -7,6 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>VideoWallPlayer</AssemblyName>
     <RootNamespace>VideoWallPlayer.Native</RootNamespace>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+    <InformationalVersion>1.0.3</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <AssemblyTitle>VideoWallPlayer</AssemblyTitle>
+    <Product>VideoWallPlayer</Product>
+    <Company>Nodera Software</Company>
+    <Copyright>Copyright (C) 2026 Nodera Software</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>

@@ -345,7 +345,7 @@ internal sealed class SetupForm : Form
             ?? throw new InvalidOperationException("Windows kaldirma kaydi olusturulamadi.");
 
         key.SetValue("DisplayName", "VideoWallPlayer", RegistryValueKind.String);
-        key.SetValue("DisplayVersion", "1.0.0", RegistryValueKind.String);
+        key.SetValue("DisplayVersion", Application.ProductVersion, RegistryValueKind.String);
         key.SetValue("Publisher", "Nodera Software", RegistryValueKind.String);
         key.SetValue("InstallLocation", InstallerPaths.InstallDirectory, RegistryValueKind.String);
         key.SetValue("DisplayIcon", InstallerPaths.AppExePath, RegistryValueKind.String);

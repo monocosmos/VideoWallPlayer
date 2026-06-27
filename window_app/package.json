@@ -1,6 +1,6 @@
 {
   "name": "videowallplayer",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Borderless fullscreen playlist video player for hotel video walls.",
   "main": "src/main.js",
   "private": true,
