@@ -1,0 +1,78 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "window_app", "window_app", "{8E82CB93-4772-45B4-A6A1-9530C7999F8C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "native", "native", "{2F2BA0B1-8447-348E-8DA4-622F0257D38B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoWallPlayer.Native", "window_app\native\VideoWallPlayer.Native\VideoWallPlayer.Native.csproj", "{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "installer", "installer", "{1860D2E4-5C43-71D5-59A5-599A4DE1DF67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoWallPlayer.Setup", "window_app\installer\VideoWallPlayer.Setup\VideoWallPlayer.Setup.csproj", "{36CFC5CE-0551-4695-9D11-0D8585501C73}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "android_app", "android_app", "{3458EDBC-3758-4F65-BDC7-F59E575F4C76}"
+	ProjectSection(SolutionItems) = preProject
+		android_app\README.md = android_app\README.md
+		android_app\gradlew = android_app\gradlew
+		android_app\gradlew.bat = android_app\gradlew.bat
+		android_app\settings.gradle = android_app\settings.gradle
+		android_app\build.gradle = android_app\build.gradle
+		android_app\gradle\wrapper\gradle-wrapper.properties = android_app\gradle\wrapper\gradle-wrapper.properties
+		android_app\app\build.gradle = android_app\app\build.gradle
+		android_app\app\src\main\AndroidManifest.xml = android_app\app\src\main\AndroidManifest.xml
+		android_app\app\src\main\java\com\monocosmos\videowallplayer\MainActivity.java = android_app\app\src\main\java\com\monocosmos\videowallplayer\MainActivity.java
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{FD2B0DA4-C80C-44D3-ACBA-B50F3F049996}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		window_app\README.md = window_app\README.md
+		android_app\wiki\Home.md = android_app\wiki\Home.md
+		window_app\wiki\Home.md = window_app\wiki\Home.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{21E4DD40-E84C-4A5C-A081-B96AE8E415D3}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		.gitattributes = .gitattributes
+		window_app\scripts\build-windows-packages.ps1 = window_app\scripts\build-windows-packages.ps1
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Debug|x64.Build.0 = Debug|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Release|x64.ActiveCfg = Release|Any CPU
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0}.Release|x64.Build.0 = Release|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Debug|x64.Build.0 = Debug|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Release|x64.ActiveCfg = Release|Any CPU
+		{36CFC5CE-0551-4695-9D11-0D8585501C73}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2F2BA0B1-8447-348E-8DA4-622F0257D38B} = {8E82CB93-4772-45B4-A6A1-9530C7999F8C}
+		{1860D2E4-5C43-71D5-59A5-599A4DE1DF67} = {8E82CB93-4772-45B4-A6A1-9530C7999F8C}
+		{CD36B68B-8CDF-4E0E-9ED3-5206732363F0} = {2F2BA0B1-8447-348E-8DA4-622F0257D38B}
+		{36CFC5CE-0551-4695-9D11-0D8585501C73} = {1860D2E4-5C43-71D5-59A5-599A4DE1DF67}
+	EndGlobalSection
+EndGlobal

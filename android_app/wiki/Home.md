@@ -7,7 +7,7 @@ Android uygulamasi VLC/libVLC tabanlidir. Amaci Android tabanli medya oynatici, 
 ## Ana Is Akisi
 
 1. Android Studio'da `android_app` klasoru acilir.
-2. APK uretilir veya hazir debug APK cihaza yuklenir.
+2. APK Gradle wrapper ile uretilir ve cihaza yuklenir.
 3. Uygulamada `Video Ekle` ile sistem dosya secicisinden videolar secilir.
 4. Tekrar modu, karisik oynatma, sessiz mod, donanim hizlandirma ve onbellek ayarlanir.
 5. `Videoyu Baslat` ile tam ekran oynatma baslar.
@@ -24,7 +24,7 @@ Push-Location android_app
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
 $env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
-& "$env:USERPROFILE\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\bin\gradle.bat" :app:assembleDebug
+.\gradlew.bat :app:assembleDebug
 Pop-Location
 ```
 

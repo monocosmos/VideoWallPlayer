@@ -28,3 +28,21 @@ Repo iki ana uygulama klasorune ayrilmistir:
 Public repo:
 
 <https://github.com/monocosmos/VideoWallPlayer>
+
+## Visual Studio ile Calisma
+
+Repo kokundeki solution dosyasini acin:
+
+```text
+VideoWallPlayer.sln
+```
+
+Bu solution Windows uygulamasini ve grafik arayuzlu Windows kurulum projesini
+icerir. Android kaynaklari da solution icinde duzenlenebilir dosyalar olarak
+listelenir; APK uretimi icin `android_app` klasoru Android Studio veya Gradle
+ile kullanilir.
+
+Windows setup projesi Visual Studio icinden build/publish edildiginde gerekli
+portable payload'u kendisi uretir ve setup EXE icine gomuler. Bu nedenle repo
+icinde hazir EXE/APK/ZIP ciktisi tutulmaz; ciktiklar `releases`, `dist-*` ve
+ilgili build klasorlerinde lokal olarak uretilir.

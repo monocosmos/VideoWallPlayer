@@ -157,7 +157,7 @@ partial class LauncherForm
         brandTableLayoutPanel.Name = "brandTableLayoutPanel";
         brandTableLayoutPanel.RowCount = 1;
         brandTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        brandTableLayoutPanel.Size = new Size(1216, 126);
+        brandTableLayoutPanel.Size = new Size(1216, 132);
         brandTableLayoutPanel.TabIndex = 0;
         // 
         // logoPictureBox
@@ -166,7 +166,7 @@ partial class LauncherForm
         logoPictureBox.Location = new Point(0, 0);
         logoPictureBox.Margin = new Padding(0);
         logoPictureBox.Name = "logoPictureBox";
-        logoPictureBox.Size = new Size(118, 126);
+        logoPictureBox.Size = new Size(118, 132);
         logoPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
         logoPictureBox.TabIndex = 0;
         logoPictureBox.TabStop = false;
@@ -178,13 +178,13 @@ partial class LauncherForm
         titleTableLayoutPanel.Controls.Add(titleLabel, 0, 0);
         titleTableLayoutPanel.Controls.Add(subtitleLabel, 0, 1);
         titleTableLayoutPanel.Dock = DockStyle.Fill;
-        titleTableLayoutPanel.Location = new Point(130, 18);
+        titleTableLayoutPanel.Location = new Point(126, 18);
         titleTableLayoutPanel.Margin = new Padding(8, 18, 8, 0);
         titleTableLayoutPanel.Name = "titleTableLayoutPanel";
         titleTableLayoutPanel.RowCount = 2;
         titleTableLayoutPanel.RowStyles.Add(new RowStyle());
         titleTableLayoutPanel.RowStyles.Add(new RowStyle());
-        titleTableLayoutPanel.Size = new Size(930, 108);
+        titleTableLayoutPanel.Size = new Size(934, 114);
         titleTableLayoutPanel.TabIndex = 1;
         // 
         // titleLabel
@@ -196,7 +196,7 @@ partial class LauncherForm
         titleLabel.Location = new Point(0, 0);
         titleLabel.Margin = new Padding(0);
         titleLabel.Name = "titleLabel";
-        titleLabel.Size = new Size(768, 45);
+        titleLabel.Size = new Size(934, 51);
         titleLabel.TabIndex = 0;
         titleLabel.Text = "VideoWallPlayer";
         // 
@@ -205,10 +205,10 @@ partial class LauncherForm
         subtitleLabel.AutoSize = true;
         subtitleLabel.Dock = DockStyle.Top;
         subtitleLabel.ForeColor = Color.FromArgb(185, 225, 232);
-        subtitleLabel.Location = new Point(0, 51);
+        subtitleLabel.Location = new Point(0, 57);
         subtitleLabel.Margin = new Padding(0, 6, 0, 0);
         subtitleLabel.Name = "subtitleLabel";
-        subtitleLabel.Size = new Size(768, 19);
+        subtitleLabel.Size = new Size(934, 20);
         subtitleLabel.TabIndex = 1;
         subtitleLabel.Text = "Profesyonel video wall oynatma";
         // 
@@ -218,7 +218,7 @@ partial class LauncherForm
         modelPictureBox.Location = new Point(1068, 0);
         modelPictureBox.Margin = new Padding(0);
         modelPictureBox.Name = "modelPictureBox";
-        modelPictureBox.Size = new Size(148, 126);
+        modelPictureBox.Size = new Size(148, 132);
         modelPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
         modelPictureBox.TabIndex = 2;
         modelPictureBox.TabStop = false;
@@ -240,7 +240,7 @@ partial class LauncherForm
         playlistTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         playlistTableLayoutPanel.RowStyles.Add(new RowStyle());
         playlistTableLayoutPanel.RowStyles.Add(new RowStyle());
-        playlistTableLayoutPanel.Size = new Size(732, 602);
+        playlistTableLayoutPanel.Size = new Size(739, 602);
         playlistTableLayoutPanel.TabIndex = 1;
         // 
         // playlistHeaderLabel
@@ -252,7 +252,7 @@ partial class LauncherForm
         playlistHeaderLabel.Location = new Point(0, 0);
         playlistHeaderLabel.Margin = new Padding(0, 0, 0, 10);
         playlistHeaderLabel.Name = "playlistHeaderLabel";
-        playlistHeaderLabel.Size = new Size(610, 30);
+        playlistHeaderLabel.Size = new Size(739, 32);
         playlistHeaderLabel.TabIndex = 0;
         playlistHeaderLabel.Text = "Oynatma Listesi";
         // 
@@ -264,11 +264,11 @@ partial class LauncherForm
         playlistListBox.ForeColor = Color.White;
         playlistListBox.HorizontalScrollbar = true;
         playlistListBox.ItemHeight = 20;
-        playlistListBox.Location = new Point(0, 40);
+        playlistListBox.Location = new Point(0, 42);
         playlistListBox.Margin = new Padding(0);
         playlistListBox.Name = "playlistListBox";
         playlistListBox.SelectionMode = SelectionMode.MultiExtended;
-        playlistListBox.Size = new Size(610, 410);
+        playlistListBox.Size = new Size(739, 493);
         playlistListBox.TabIndex = 1;
         // 
         // playlistButtonsFlowLayoutPanel
@@ -282,11 +282,10 @@ partial class LauncherForm
         playlistButtonsFlowLayoutPanel.Controls.Add(moveUpButton);
         playlistButtonsFlowLayoutPanel.Controls.Add(moveDownButton);
         playlistButtonsFlowLayoutPanel.Dock = DockStyle.Fill;
-        playlistButtonsFlowLayoutPanel.Location = new Point(0, 460);
+        playlistButtonsFlowLayoutPanel.Location = new Point(0, 545);
         playlistButtonsFlowLayoutPanel.Margin = new Padding(0, 10, 0, 0);
         playlistButtonsFlowLayoutPanel.Name = "playlistButtonsFlowLayoutPanel";
-        playlistButtonsFlowLayoutPanel.Size = new Size(732, 34);
-        playlistButtonsFlowLayoutPanel.WrapContents = true;
+        playlistButtonsFlowLayoutPanel.Size = new Size(739, 29);
         playlistButtonsFlowLayoutPanel.TabIndex = 2;
         // 
         // addVideosButton
@@ -348,10 +347,10 @@ partial class LauncherForm
         statusLabel.AutoSize = true;
         statusLabel.Dock = DockStyle.Fill;
         statusLabel.ForeColor = Color.FromArgb(190, 198, 210);
-        statusLabel.Location = new Point(2, 497);
+        statusLabel.Location = new Point(2, 582);
         statusLabel.Margin = new Padding(2, 8, 0, 0);
         statusLabel.Name = "statusLabel";
-        statusLabel.Size = new Size(608, 19);
+        statusLabel.Size = new Size(737, 20);
         statusLabel.TabIndex = 3;
         statusLabel.Text = "0 video listede.";
         // 
@@ -380,7 +379,7 @@ partial class LauncherForm
         settingsTableLayoutPanel.Controls.Add(cacheNumericUpDown, 0, 17);
         settingsTableLayoutPanel.Controls.Add(gpuNoteLabel, 0, 18);
         settingsTableLayoutPanel.Dock = DockStyle.Fill;
-        settingsTableLayoutPanel.Location = new Point(794, 174);
+        settingsTableLayoutPanel.Location = new Point(791, 174);
         settingsTableLayoutPanel.Margin = new Padding(14, 0, 0, 0);
         settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
         settingsTableLayoutPanel.RowCount = 19;
@@ -403,7 +402,7 @@ partial class LauncherForm
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-        settingsTableLayoutPanel.Size = new Size(446, 602);
+        settingsTableLayoutPanel.Size = new Size(449, 602);
         settingsTableLayoutPanel.TabIndex = 2;
         // 
         // settingsHeaderLabel
@@ -414,7 +413,7 @@ partial class LauncherForm
         settingsHeaderLabel.Location = new Point(0, 0);
         settingsHeaderLabel.Margin = new Padding(0, 0, 0, 10);
         settingsHeaderLabel.Name = "settingsHeaderLabel";
-        settingsHeaderLabel.Size = new Size(83, 30);
+        settingsHeaderLabel.Size = new Size(92, 32);
         settingsHeaderLabel.TabIndex = 0;
         settingsHeaderLabel.Text = "Ayarlar";
         // 
@@ -426,11 +425,10 @@ partial class LauncherForm
         actionsFlowLayoutPanel.Controls.Add(saveSettingsButton);
         actionsFlowLayoutPanel.Controls.Add(exitButton);
         actionsFlowLayoutPanel.Dock = DockStyle.Fill;
-        actionsFlowLayoutPanel.Location = new Point(0, 40);
+        actionsFlowLayoutPanel.Location = new Point(0, 42);
         actionsFlowLayoutPanel.Margin = new Padding(0, 0, 0, 14);
         actionsFlowLayoutPanel.Name = "actionsFlowLayoutPanel";
-        actionsFlowLayoutPanel.Size = new Size(446, 34);
-        actionsFlowLayoutPanel.WrapContents = true;
+        actionsFlowLayoutPanel.Size = new Size(449, 29);
         actionsFlowLayoutPanel.TabIndex = 1;
         // 
         // playButton
@@ -462,7 +460,7 @@ partial class LauncherForm
         // 
         // languageLabel
         // 
-        languageLabel.Location = new Point(3, 83);
+        languageLabel.Location = new Point(3, 85);
         languageLabel.Name = "languageLabel";
         languageLabel.Size = new Size(100, 23);
         languageLabel.TabIndex = 2;
@@ -470,14 +468,14 @@ partial class LauncherForm
         // 
         // languageComboBox
         // 
-        languageComboBox.Location = new Point(3, 109);
+        languageComboBox.Location = new Point(3, 111);
         languageComboBox.Name = "languageComboBox";
-        languageComboBox.Size = new Size(121, 25);
+        languageComboBox.Size = new Size(121, 28);
         languageComboBox.TabIndex = 3;
         // 
         // repeatLabel
         // 
-        repeatLabel.Location = new Point(3, 137);
+        repeatLabel.Location = new Point(3, 142);
         repeatLabel.Name = "repeatLabel";
         repeatLabel.Size = new Size(100, 23);
         repeatLabel.TabIndex = 4;
@@ -485,9 +483,9 @@ partial class LauncherForm
         // 
         // repeatComboBox
         // 
-        repeatComboBox.Location = new Point(3, 163);
+        repeatComboBox.Location = new Point(3, 168);
         repeatComboBox.Name = "repeatComboBox";
-        repeatComboBox.Size = new Size(121, 25);
+        repeatComboBox.Size = new Size(121, 28);
         repeatComboBox.TabIndex = 5;
         // 
         // playbackOptionsFlowLayoutPanel
@@ -499,11 +497,10 @@ partial class LauncherForm
         playbackOptionsFlowLayoutPanel.Controls.Add(kioskCheckBox);
         playbackOptionsFlowLayoutPanel.Controls.Add(mutedCheckBox);
         playbackOptionsFlowLayoutPanel.Dock = DockStyle.Top;
-        playbackOptionsFlowLayoutPanel.Location = new Point(0, 201);
+        playbackOptionsFlowLayoutPanel.Location = new Point(0, 209);
         playbackOptionsFlowLayoutPanel.Margin = new Padding(0, 10, 0, 0);
         playbackOptionsFlowLayoutPanel.Name = "playbackOptionsFlowLayoutPanel";
-        playbackOptionsFlowLayoutPanel.Size = new Size(446, 60);
-        playbackOptionsFlowLayoutPanel.WrapContents = true;
+        playbackOptionsFlowLayoutPanel.Size = new Size(449, 30);
         playbackOptionsFlowLayoutPanel.TabIndex = 6;
         // 
         // shuffleCheckBox
@@ -532,7 +529,7 @@ partial class LauncherForm
         // 
         // mutedCheckBox
         // 
-        mutedCheckBox.Location = new Point(3, 33);
+        mutedCheckBox.Location = new Point(333, 3);
         mutedCheckBox.Name = "mutedCheckBox";
         mutedCheckBox.Size = new Size(104, 24);
         mutedCheckBox.TabIndex = 3;
@@ -540,7 +537,7 @@ partial class LauncherForm
         // 
         // displayLabel
         // 
-        displayLabel.Location = new Point(3, 261);
+        displayLabel.Location = new Point(3, 239);
         displayLabel.Name = "displayLabel";
         displayLabel.Size = new Size(100, 23);
         displayLabel.TabIndex = 7;
@@ -548,14 +545,14 @@ partial class LauncherForm
         // 
         // displayComboBox
         // 
-        displayComboBox.Location = new Point(3, 287);
+        displayComboBox.Location = new Point(3, 265);
         displayComboBox.Name = "displayComboBox";
-        displayComboBox.Size = new Size(121, 25);
+        displayComboBox.Size = new Size(121, 28);
         displayComboBox.TabIndex = 8;
         // 
         // hardwareLabel
         // 
-        hardwareLabel.Location = new Point(3, 315);
+        hardwareLabel.Location = new Point(3, 291);
         hardwareLabel.Name = "hardwareLabel";
         hardwareLabel.Size = new Size(100, 23);
         hardwareLabel.TabIndex = 9;
@@ -563,14 +560,14 @@ partial class LauncherForm
         // 
         // hardwareComboBox
         // 
-        hardwareComboBox.Location = new Point(3, 341);
+        hardwareComboBox.Location = new Point(3, 317);
         hardwareComboBox.Name = "hardwareComboBox";
-        hardwareComboBox.Size = new Size(121, 25);
+        hardwareComboBox.Size = new Size(121, 28);
         hardwareComboBox.TabIndex = 10;
         // 
         // outputLabel
         // 
-        outputLabel.Location = new Point(3, 369);
+        outputLabel.Location = new Point(3, 343);
         outputLabel.Name = "outputLabel";
         outputLabel.Size = new Size(100, 23);
         outputLabel.TabIndex = 11;
@@ -578,14 +575,14 @@ partial class LauncherForm
         // 
         // videoOutputComboBox
         // 
-        videoOutputComboBox.Location = new Point(3, 395);
+        videoOutputComboBox.Location = new Point(3, 369);
         videoOutputComboBox.Name = "videoOutputComboBox";
-        videoOutputComboBox.Size = new Size(121, 25);
+        videoOutputComboBox.Size = new Size(121, 28);
         videoOutputComboBox.TabIndex = 12;
         // 
         // gpuLabel
         // 
-        gpuLabel.Location = new Point(3, 423);
+        gpuLabel.Location = new Point(3, 395);
         gpuLabel.Name = "gpuLabel";
         gpuLabel.Size = new Size(100, 23);
         gpuLabel.TabIndex = 13;
@@ -593,9 +590,9 @@ partial class LauncherForm
         // 
         // gpuComboBox
         // 
-        gpuComboBox.Location = new Point(3, 449);
+        gpuComboBox.Location = new Point(3, 421);
         gpuComboBox.Name = "gpuComboBox";
-        gpuComboBox.Size = new Size(121, 25);
+        gpuComboBox.Size = new Size(121, 28);
         gpuComboBox.TabIndex = 14;
         // 
         // gpuInfoLabel
@@ -603,16 +600,16 @@ partial class LauncherForm
         gpuInfoLabel.AutoSize = true;
         gpuInfoLabel.Dock = DockStyle.Top;
         gpuInfoLabel.ForeColor = Color.FromArgb(158, 168, 184);
-        gpuInfoLabel.Location = new Point(0, 483);
+        gpuInfoLabel.Location = new Point(0, 453);
         gpuInfoLabel.Margin = new Padding(0, 6, 0, 0);
         gpuInfoLabel.Name = "gpuInfoLabel";
-        gpuInfoLabel.Size = new Size(370, 19);
+        gpuInfoLabel.Size = new Size(449, 20);
         gpuInfoLabel.TabIndex = 15;
         gpuInfoLabel.Text = "Algılanan GPU: -";
         // 
         // cacheLabel
         // 
-        cacheLabel.Location = new Point(3, 502);
+        cacheLabel.Location = new Point(3, 473);
         cacheLabel.Name = "cacheLabel";
         cacheLabel.Size = new Size(100, 23);
         cacheLabel.TabIndex = 16;
@@ -622,12 +619,12 @@ partial class LauncherForm
         // 
         cacheNumericUpDown.Dock = DockStyle.Top;
         cacheNumericUpDown.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-        cacheNumericUpDown.Location = new Point(0, 529);
+        cacheNumericUpDown.Location = new Point(0, 500);
         cacheNumericUpDown.Margin = new Padding(0, 4, 0, 8);
         cacheNumericUpDown.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
         cacheNumericUpDown.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
         cacheNumericUpDown.Name = "cacheNumericUpDown";
-        cacheNumericUpDown.Size = new Size(370, 25);
+        cacheNumericUpDown.Size = new Size(449, 27);
         cacheNumericUpDown.TabIndex = 17;
         cacheNumericUpDown.Value = new decimal(new int[] { 3000, 0, 0, 0 });
         // 
@@ -636,29 +633,27 @@ partial class LauncherForm
         gpuNoteLabel.AutoSize = true;
         gpuNoteLabel.Dock = DockStyle.Top;
         gpuNoteLabel.ForeColor = Color.FromArgb(158, 168, 184);
-        gpuNoteLabel.Location = new Point(0, 574);
+        gpuNoteLabel.Location = new Point(0, 547);
         gpuNoteLabel.Margin = new Padding(0, 12, 0, 0);
         gpuNoteLabel.Name = "gpuNoteLabel";
-        gpuNoteLabel.Size = new Size(370, 8);
+        gpuNoteLabel.Size = new Size(449, 20);
         gpuNoteLabel.TabIndex = 18;
         gpuNoteLabel.Text = "GPU tercihi Windows tarafından uygulanır.";
         // 
         // LauncherForm
         // 
-        AutoScaleDimensions = new SizeF(7F, 17F);
+        AutoScaleDimensions = new SizeF(8F, 20F);
         AutoScaleMode = AutoScaleMode.Font;
         BackColor = Color.FromArgb(24, 26, 31);
         ClientSize = new Size(1264, 800);
         Controls.Add(rootTableLayoutPanel);
         Font = new Font("Segoe UI", 11F);
         ForeColor = Color.White;
-        FormBorderStyle = FormBorderStyle.Sizable;
         MinimumSize = new Size(960, 620);
         Name = "LauncherForm";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "VideoWallPlayer";
         rootTableLayoutPanel.ResumeLayout(false);
-        rootTableLayoutPanel.PerformLayout();
         brandTableLayoutPanel.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)logoPictureBox).EndInit();
         titleTableLayoutPanel.ResumeLayout(false);

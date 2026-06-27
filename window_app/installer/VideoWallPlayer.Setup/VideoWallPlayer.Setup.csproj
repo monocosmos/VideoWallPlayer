@@ -18,9 +18,47 @@
     <Copyright>Copyright (C) 2026 Nodera Software</Copyright>
     <ApplicationIcon>..\..\native\VideoWallPlayer.Native\Assets\AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <InstallerRuntimeIdentifier Condition="'$(InstallerRuntimeIdentifier)' == ''">win-x64</InstallerRuntimeIdentifier>
+    <PayloadZipName>VideoWallPlayer-Windows-Portable-x64.zip</PayloadZipName>
+    <StaticPayloadZipPath>$(MSBuildProjectDirectory)\Payload\Payload.zip</StaticPayloadZipPath>
+    <NativeProjectPath>..\..\native\VideoWallPlayer.Native\VideoWallPlayer.Native.csproj</NativeProjectPath>
+    <GeneratedNativePublishDir>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(TargetFramework)\native-publish\</GeneratedNativePublishDir>
+    <GeneratedPayloadDir>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(TargetFramework)\payload\</GeneratedPayloadDir>
+    <GeneratedPayloadZipPath>$(GeneratedPayloadDir)$(PayloadZipName)</GeneratedPayloadZipPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Payload\VideoWallPlayer-Windows-Portable-x64.zip" LogicalName="Payload.zip" />
+    <EmbeddedResource Include="Payload\Payload.zip" LogicalName="Payload.zip" />
   </ItemGroup>
+
+  <Target Name="PrepareInstallerPayload" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <EffectivePayloadZipPath Condition="'$(InstallerPayloadZipPath)' != ''">$(InstallerPayloadZipPath)</EffectivePayloadZipPath>
+      <EffectivePayloadZipPath Condition="'$(EffectivePayloadZipPath)' == ''">$(GeneratedPayloadZipPath)</EffectivePayloadZipPath>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(GeneratedNativePublishDir);$(GeneratedPayloadDir)" Condition="'$(InstallerPayloadZipPath)' == ''" />
+    <MakeDir Directories="$(GeneratedNativePublishDir);$(GeneratedPayloadDir)" Condition="'$(InstallerPayloadZipPath)' == ''" />
+
+    <MSBuild
+      Projects="$(NativeProjectPath)"
+      Targets="Publish"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(InstallerRuntimeIdentifier);SelfContained=true;PublishDir=$(GeneratedNativePublishDir)"
+      Condition="'$(InstallerPayloadZipPath)' == ''" />
+
+    <Exec
+      Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;Compress-Archive -Path '$(GeneratedNativePublishDir)*' -DestinationPath '$(GeneratedPayloadZipPath)' -Force -CompressionLevel Optimal&quot;"
+      Condition="'$(InstallerPayloadZipPath)' == ''" />
+
+    <Error
+      Text="Installer payload zip bulunamadi: $(EffectivePayloadZipPath)"
+      Condition="!Exists('$(EffectivePayloadZipPath)')" />
+
+    <MakeDir Directories="$(MSBuildProjectDirectory)\Payload" />
+    <Copy SourceFiles="$(EffectivePayloadZipPath)" DestinationFiles="$(StaticPayloadZipPath)" />
+
+    <Error
+      Text="Installer statik payload zip olusturulamadi: $(StaticPayloadZipPath)"
+      Condition="!Exists('$(StaticPayloadZipPath)')" />
+  </Target>
 </Project>

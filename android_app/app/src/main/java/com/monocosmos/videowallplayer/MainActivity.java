@@ -12,6 +12,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -61,6 +63,8 @@ public final class MainActivity extends Activity {
     private static final int RepeatAll = 0;
     private static final int RepeatOne = 1;
     private static final int RepeatNone = 2;
+    private static final int StartupCachingMs = 350;
+    private static final int StandbyFirstFramePauseMs = 160;
     private static final int BackgroundColor = Color.rgb(13, 17, 25);
     private static final int SurfaceColor = Color.rgb(24, 30, 42);
     private static final int SurfaceAltColor = Color.rgb(15, 20, 30);
@@ -76,7 +80,8 @@ public final class MainActivity extends Activity {
     private FrameLayout root;
     private LinearLayout launcherView;
     private FrameLayout playerView;
-    private VLCVideoLayout videoLayout;
+    private VLCVideoLayout activeVideoLayout;
+    private VLCVideoLayout standbyVideoLayout;
     private ListView playlistListView;
     private ArrayAdapter<String> playlistAdapter;
     private TextView statusLabel;
@@ -87,11 +92,19 @@ public final class MainActivity extends Activity {
     private NumberPicker cachePicker;
 
     private LibVLC libVlc;
-    private MediaPlayer mediaPlayer;
-    private AssetFileDescriptor currentMediaDescriptor;
+    private MediaPlayer activePlayer;
+    private MediaPlayer standbyPlayer;
+    private AssetFileDescriptor activeMediaDescriptor;
+    private AssetFileDescriptor standbyMediaDescriptor;
     private int orderIndex;
+    private int standbyOrderIndex = -1;
     private boolean playerVisible;
     private boolean paused;
+    private boolean standbyPlaying;
+    private boolean standbyPriming;
+    private boolean standbyReady;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable freezeStandbyRunnable = this::freezeStandbyOnFirstFrame;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -194,8 +207,10 @@ public final class MainActivity extends Activity {
 
         playerView = new FrameLayout(this);
         playerView.setBackgroundColor(Color.BLACK);
-        videoLayout = new VLCVideoLayout(this);
-        playerView.addView(videoLayout, new FrameLayout.LayoutParams(-1, -1));
+        standbyVideoLayout = new VLCVideoLayout(this);
+        activeVideoLayout = new VLCVideoLayout(this);
+        playerView.addView(standbyVideoLayout, new FrameLayout.LayoutParams(-1, -1));
+        playerView.addView(activeVideoLayout, new FrameLayout.LayoutParams(-1, -1));
         root.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
         playerView.setVisibility(View.GONE);
     }
@@ -314,7 +329,7 @@ public final class MainActivity extends Activity {
         settingsPanel.addView(optionRow);
         settingsPanel.addView(field("Donanim hizlandirma", hardwareSpinner));
         settingsPanel.addView(field("Onbellek (ms)", cachePicker));
-        TextView help = text("Video ekraninda Space duraklatir/devam ettirir. Geri, Esc veya F11 oynatimdan cikar.", 13, TextMutedColor, false);
+        TextView help = text("Onbellek sonraki videoyu hazirlamak icin kullanilir; ilk acilis dusuk gecikmeli baslar. Video ekraninda Space duraklatir/devam ettirir. Geri, Esc veya F11 oynatimdan cikar.", 13, TextMutedColor, false);
         help.setPadding(0, dp(12), 0, 0);
         settingsPanel.addView(help);
 
@@ -470,7 +485,7 @@ public final class MainActivity extends Activity {
     }
 
     private void ensurePlayer() {
-        if (libVlc != null && mediaPlayer != null) {
+        if (libVlc != null && activePlayer != null && standbyPlayer != null) {
             return;
         }
 
@@ -478,63 +493,94 @@ public final class MainActivity extends Activity {
         options.add("--no-video-title-show");
         options.add("--no-osd");
         options.add("--quiet");
-        options.add("--file-caching=" + cachePicker.getValue());
-        options.add("--network-caching=" + cachePicker.getValue());
+        options.add("--file-caching=" + startupCachingMs());
+        options.add("--network-caching=" + startupCachingMs());
         options.add("--avcodec-hw=" + (hardwareSpinner.getSelectedItemPosition() == 1 ? "none" : "any"));
 
         libVlc = new LibVLC(this, options);
-        mediaPlayer = new MediaPlayer(libVlc);
-        mediaPlayer.attachViews(videoLayout, null, false, false);
-        mediaPlayer.setEventListener(event -> {
-            if (event.type == MediaPlayer.Event.EndReached) {
+        activePlayer = createPlayer(activeVideoLayout);
+        standbyPlayer = createPlayer(standbyVideoLayout);
+    }
+
+    private MediaPlayer createPlayer(VLCVideoLayout layout) {
+        MediaPlayer player = new MediaPlayer(libVlc);
+        player.attachViews(layout, null, false, false);
+        player.setEventListener(event -> handlePlayerEvent(player, event));
+        player.setVolume(mutedCheckBox.isChecked() ? 0 : 100);
+        return player;
+    }
+
+    private void handlePlayerEvent(MediaPlayer player, MediaPlayer.Event event) {
+        if (event.type == MediaPlayer.Event.EndReached) {
+            if (player == activePlayer) {
                 runOnUiThread(this::playNextAfterEnd);
-            } else if (event.type == MediaPlayer.Event.EncounteredError) {
+            }
+            return;
+        }
+
+        if (event.type == MediaPlayer.Event.EncounteredError) {
+            if (player == activePlayer) {
                 runOnUiThread(this::handlePlaybackError);
             }
-        });
-        mediaPlayer.setVolume(mutedCheckBox.isChecked() ? 0 : 100);
+            return;
+        }
+
+        if (event.type == MediaPlayer.Event.Playing && player == standbyPlayer && standbyPriming) {
+            mainHandler.removeCallbacks(freezeStandbyRunnable);
+            mainHandler.postDelayed(freezeStandbyRunnable, StandbyFirstFramePauseMs);
+        }
     }
 
     private void playCurrent() {
-        if (mediaPlayer == null || playOrder.isEmpty() || orderIndex < 0 || orderIndex >= playOrder.size()) {
+        if (activePlayer == null || playOrder.isEmpty() || orderIndex < 0 || orderIndex >= playOrder.size()) {
             return;
         }
 
         Uri uri = Uri.parse(playlist.get(playOrder.get(orderIndex)));
         try {
-            Media media = createMedia(uri);
+            activePlayer.stop();
+            closeActiveMediaDescriptor();
+            Media media = createMedia(uri, true, startupCachingMs());
             boolean hardware = hardwareSpinner.getSelectedItemPosition() != 1;
             media.setHWDecoderEnabled(hardware, false);
-            media.addOption(":file-caching=" + cachePicker.getValue());
-            media.addOption(":network-caching=" + cachePicker.getValue());
-            mediaPlayer.setMedia(media);
+            activePlayer.setMedia(media);
             media.release();
-            mediaPlayer.play();
+            activeVideoLayout.bringToFront();
+            activePlayer.setVolume(mutedCheckBox.isChecked() ? 0 : 100);
+            activePlayer.play();
             paused = false;
             hideSystemUi();
+            prepareNextIfNeeded();
         } catch (Exception ex) {
             statusLabel.setText("Video acilamadi: " + displayName(uri));
             handlePlaybackError();
         }
     }
 
-    private Media createMedia(Uri uri) throws Exception {
-        closeCurrentMediaDescriptor();
-
+    private Media createMedia(Uri uri, boolean active, int cachingMs) throws Exception {
+        Media media;
         if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(uri.getScheme())) {
-            currentMediaDescriptor = getContentResolver().openAssetFileDescriptor(uri, "r");
-            if (currentMediaDescriptor == null) {
+            AssetFileDescriptor descriptor = getContentResolver().openAssetFileDescriptor(uri, "r");
+            if (descriptor == null) {
                 throw new IllegalStateException("Dosya izni alinamadi.");
             }
 
-            return new Media(libVlc, currentMediaDescriptor);
+            if (active) {
+                activeMediaDescriptor = descriptor;
+            } else {
+                standbyMediaDescriptor = descriptor;
+            }
+            media = new Media(libVlc, descriptor);
+        } else if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme()) && uri.getPath() != null) {
+            media = new Media(libVlc, uri.getPath());
+        } else {
+            media = new Media(libVlc, uri);
         }
 
-        if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme()) && uri.getPath() != null) {
-            return new Media(libVlc, uri.getPath());
-        }
-
-        return new Media(libVlc, uri);
+        media.addOption(":file-caching=" + cachingMs);
+        media.addOption(":network-caching=" + cachingMs);
+        media.addOption(":avcodec-hw=" + (hardwareSpinner.getSelectedItemPosition() == 1 ? "none" : "any"));
+        return media;
     }
 
     private void handlePlaybackError() {
@@ -552,6 +598,7 @@ public final class MainActivity extends Activity {
 
         toast("Video oynatilamadi, siradaki deneniyor.");
         orderIndex = (orderIndex + 1) % playOrder.size();
+        clearStandby();
         playCurrent();
     }
 
@@ -560,49 +607,179 @@ public final class MainActivity extends Activity {
             return;
         }
 
-        if (repeatSpinner.getSelectedItemPosition() == RepeatOne) {
-            playCurrent();
-            return;
-        }
-
-        orderIndex++;
-        if (orderIndex < playOrder.size()) {
-            playCurrent();
-            return;
-        }
-
-        if (repeatSpinner.getSelectedItemPosition() == RepeatNone) {
+        Integer next = nextOrderIndex();
+        if (next == null) {
             showLauncher();
             return;
         }
 
-        buildPlayOrder();
-        orderIndex = 0;
-        playCurrent();
+        orderIndex = next;
+        if (!swapToStandbyIfAvailable()) {
+            playCurrent();
+        }
     }
 
     private void togglePause() {
-        if (mediaPlayer == null || !playerVisible) {
+        if (activePlayer == null || !playerVisible) {
             return;
         }
         paused = !paused;
         if (paused) {
-            mediaPlayer.pause();
+            activePlayer.pause();
         } else {
-            mediaPlayer.play();
+            activePlayer.play();
         }
         hideSystemUi();
     }
 
-    private void releasePlayer() {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.detachViews();
-            mediaPlayer.release();
-            mediaPlayer = null;
+    private void prepareNextIfNeeded() {
+        if (!playerVisible || activePlayer == null || standbyPlayer == null || playOrder.isEmpty()) {
+            return;
         }
 
-        closeCurrentMediaDescriptor();
+        Integer next = nextOrderIndex();
+        if (next == null || (standbyPlaying && standbyOrderIndex == next)) {
+            return;
+        }
+
+        preloadStandby(next);
+    }
+
+    private Integer nextOrderIndex() {
+        if (playOrder.isEmpty()) {
+            return null;
+        }
+
+        if (repeatSpinner.getSelectedItemPosition() == RepeatOne) {
+            return orderIndex;
+        }
+
+        int next = orderIndex + 1;
+        if (next < playOrder.size()) {
+            return next;
+        }
+
+        if (repeatSpinner.getSelectedItemPosition() == RepeatNone) {
+            return null;
+        }
+
+        return 0;
+    }
+
+    private void preloadStandby(int nextOrderIndex) {
+        if (nextOrderIndex < 0 || nextOrderIndex >= playOrder.size()) {
+            return;
+        }
+
+        clearStandby();
+        Uri uri = Uri.parse(playlist.get(playOrder.get(nextOrderIndex)));
+        try {
+            Media media = createMedia(uri, false, standbyCachingMs());
+            boolean hardware = hardwareSpinner.getSelectedItemPosition() != 1;
+            media.setHWDecoderEnabled(hardware, false);
+            standbyPlayer.setMedia(media);
+            media.release();
+            standbyOrderIndex = nextOrderIndex;
+            standbyPriming = true;
+            standbyReady = false;
+            standbyPlaying = true;
+            standbyPlayer.setVolume(0);
+            standbyVideoLayout.bringToFront();
+            activeVideoLayout.bringToFront();
+            standbyPlayer.play();
+        } catch (Exception ex) {
+            clearStandby();
+        }
+    }
+
+    private void freezeStandbyOnFirstFrame() {
+        if (!playerVisible || !standbyPriming || !standbyPlaying || standbyPlayer == null) {
+            return;
+        }
+
+        try {
+            standbyPlayer.pause();
+            if (standbyPlayer.getTime() > 0) {
+                standbyPlayer.setTime(0);
+            }
+        } catch (RuntimeException ignored) {
+        }
+
+        standbyPriming = false;
+        standbyReady = true;
+    }
+
+    private boolean swapToStandbyIfAvailable() {
+        if (!standbyPlaying || standbyPlayer == null || standbyOrderIndex != orderIndex) {
+            return false;
+        }
+
+        mainHandler.removeCallbacks(freezeStandbyRunnable);
+        boolean wasReady = standbyReady;
+        MediaPlayer previousPlayer = activePlayer;
+        VLCVideoLayout previousLayout = activeVideoLayout;
+        AssetFileDescriptor previousDescriptor = activeMediaDescriptor;
+
+        activePlayer = standbyPlayer;
+        activeVideoLayout = standbyVideoLayout;
+        activeMediaDescriptor = standbyMediaDescriptor;
+
+        standbyPlayer = previousPlayer;
+        standbyVideoLayout = previousLayout;
+        standbyMediaDescriptor = null;
+        standbyOrderIndex = -1;
+        standbyPlaying = false;
+        standbyPriming = false;
+        standbyReady = false;
+
+        activeVideoLayout.bringToFront();
+        activePlayer.setVolume(mutedCheckBox.isChecked() ? 0 : 100);
+        if (wasReady) {
+            try {
+                activePlayer.setTime(0);
+            } catch (RuntimeException ignored) {
+            }
+        }
+        activePlayer.play();
+
+        standbyPlayer.stop();
+        closeDescriptor(previousDescriptor);
+        paused = false;
+        prepareNextIfNeeded();
+        return true;
+    }
+
+    private int startupCachingMs() {
+        return Math.max(100, Math.min(cachePicker.getValue(), StartupCachingMs));
+    }
+
+    private int standbyCachingMs() {
+        return Math.max(100, Math.min(cachePicker.getValue(), 30000));
+    }
+
+    private void releasePlayer() {
+        mainHandler.removeCallbacks(freezeStandbyRunnable);
+
+        if (activePlayer != null) {
+            activePlayer.stop();
+            activePlayer.detachViews();
+            activePlayer.release();
+            activePlayer = null;
+        }
+
+        if (standbyPlayer != null) {
+            standbyPlayer.stop();
+            standbyPlayer.detachViews();
+            standbyPlayer.release();
+            standbyPlayer = null;
+        }
+
+        closeActiveMediaDescriptor();
+        closeStandbyMediaDescriptor();
+        standbyOrderIndex = -1;
+        standbyPlaying = false;
+        standbyPriming = false;
+        standbyReady = false;
 
         if (libVlc != null) {
             libVlc.release();
@@ -610,16 +787,37 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private void closeCurrentMediaDescriptor() {
-        if (currentMediaDescriptor == null) {
+    private void clearStandby() {
+        mainHandler.removeCallbacks(freezeStandbyRunnable);
+        if (standbyPlayer != null) {
+            standbyPlayer.stop();
+        }
+        closeStandbyMediaDescriptor();
+        standbyOrderIndex = -1;
+        standbyPlaying = false;
+        standbyPriming = false;
+        standbyReady = false;
+    }
+
+    private void closeActiveMediaDescriptor() {
+        closeDescriptor(activeMediaDescriptor);
+        activeMediaDescriptor = null;
+    }
+
+    private void closeStandbyMediaDescriptor() {
+        closeDescriptor(standbyMediaDescriptor);
+        standbyMediaDescriptor = null;
+    }
+
+    private void closeDescriptor(AssetFileDescriptor descriptor) {
+        if (descriptor == null) {
             return;
         }
 
         try {
-            currentMediaDescriptor.close();
+            descriptor.close();
         } catch (Exception ignored) {
         }
-        currentMediaDescriptor = null;
     }
 
     private void hideSystemUi() {

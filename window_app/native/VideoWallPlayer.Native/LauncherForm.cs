@@ -47,6 +47,14 @@ public sealed partial class LauncherForm : Form
     private CheckBox _mutedCheck => mutedCheckBox;
     private NumericUpDown _cacheInput => cacheNumericUpDown;
     private Label _statusLabel => statusLabel;
+    private readonly Label _placementLabel = new();
+    private readonly ComboBox _placementCombo = new();
+    private readonly Label _manualPlacementLabel = new();
+    private readonly TableLayoutPanel _manualPlacementPanel = new();
+    private readonly NumericUpDown _manualXInput = new();
+    private readonly NumericUpDown _manualYInput = new();
+    private readonly NumericUpDown _manualWidthInput = new();
+    private readonly NumericUpDown _manualHeightInput = new();
 
     public LauncherForm()
     {
@@ -60,6 +68,7 @@ public sealed partial class LauncherForm : Form
         RightToLeftLayout = _localizer.IsRightToLeft;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? Icon;
 
+        InsertPlacementControls();
         ApplyRuntimeStyle();
         ApplyLocalizedText();
         LoadBrandImages();
@@ -87,7 +96,7 @@ public sealed partial class LauncherForm : Form
         playbackOptionsFlowLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         settingsTableLayoutPanel.AutoScroll = true;
         settingsTableLayoutPanel.BackColor = SurfaceColor;
-        settingsTableLayoutPanel.Padding = new Padding(18, 14, 18, 14);
+        settingsTableLayoutPanel.Padding = new Padding(18, 12, 18, 12);
         playlistTableLayoutPanel.BackColor = SurfaceColor;
         playlistTableLayoutPanel.Padding = new Padding(18, 14, 18, 14);
         brandTableLayoutPanel.BackColor = BackgroundColor;
@@ -123,12 +132,20 @@ public sealed partial class LauncherForm : Form
             label.AutoSize = true;
             label.Dock = DockStyle.Top;
             label.ForeColor = TextMutedColor;
-            label.Margin = new Padding(0, 8, 0, 0);
+            label.Margin = new Padding(0, 5, 10, 0);
+        }
+
+        foreach (var label in new[] { _placementLabel, _manualPlacementLabel })
+        {
+            label.AutoSize = true;
+            label.Dock = DockStyle.Top;
+            label.ForeColor = TextMutedColor;
+            label.Margin = new Padding(0, 5, 10, 0);
         }
 
         foreach (var comboBox in new[]
         {
-            languageComboBox, repeatComboBox, displayComboBox, hardwareComboBox, videoOutputComboBox, gpuComboBox
+            languageComboBox, repeatComboBox, displayComboBox, hardwareComboBox, videoOutputComboBox, gpuComboBox, _placementCombo
         })
         {
             comboBox.Dock = DockStyle.Top;
@@ -136,20 +153,36 @@ public sealed partial class LauncherForm : Form
             comboBox.BackColor = FieldColor;
             comboBox.ForeColor = Color.White;
             comboBox.FlatStyle = FlatStyle.Flat;
-            comboBox.Margin = new Padding(0, 4, 0, 8);
-            comboBox.Height = 34;
+            comboBox.Margin = new Padding(0, 2, 10, 6);
+            comboBox.Height = 30;
         }
 
         cacheNumericUpDown.BackColor = FieldColor;
         cacheNumericUpDown.ForeColor = Color.White;
         cacheNumericUpDown.BorderStyle = BorderStyle.FixedSingle;
+        cacheNumericUpDown.Margin = new Padding(0, 2, 10, 6);
+
+        foreach (var numeric in new[] { _manualXInput, _manualYInput, _manualWidthInput, _manualHeightInput })
+        {
+            numeric.BackColor = FieldColor;
+            numeric.ForeColor = Color.White;
+            numeric.BorderStyle = BorderStyle.FixedSingle;
+            numeric.Dock = DockStyle.Top;
+            numeric.Height = 28;
+            numeric.Maximum = 20000;
+            numeric.Minimum = numeric == _manualXInput || numeric == _manualYInput ? -20000 : 0;
+            numeric.Increment = 1;
+        }
 
         foreach (var checkBox in new[] { shuffleCheckBox, fullscreenCheckBox, kioskCheckBox, mutedCheckBox })
         {
             checkBox.AutoSize = true;
             checkBox.ForeColor = Color.White;
-            checkBox.Margin = new Padding(0, 0, 18, 0);
+            checkBox.Margin = new Padding(0, 0, 16, 4);
         }
+
+        _fullscreenCheck.AutoCheck = false;
+        _fullscreenCheck.Enabled = true;
 
         foreach (var button in new[]
         {
@@ -170,6 +203,57 @@ public sealed partial class LauncherForm : Form
 
         Resize += (_, _) => ApplyResponsiveStyle();
         ApplyResponsiveStyle();
+    }
+
+    private void InsertPlacementControls()
+    {
+        settingsTableLayoutPanel.RowCount += 4;
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
+
+        var row = settingsTableLayoutPanel.RowCount - 4;
+        settingsTableLayoutPanel.Controls.Add(_placementLabel, 0, row);
+        settingsTableLayoutPanel.Controls.Add(_placementCombo, 0, row + 1);
+        settingsTableLayoutPanel.Controls.Add(_manualPlacementLabel, 0, row + 2);
+        settingsTableLayoutPanel.Controls.Add(_manualPlacementPanel, 0, row + 3);
+
+        _manualPlacementPanel.AutoSize = true;
+        _manualPlacementPanel.ColumnCount = 4;
+        _manualPlacementPanel.RowCount = 2;
+        _manualPlacementPanel.Dock = DockStyle.Top;
+        _manualPlacementPanel.Margin = new Padding(0, 4, 0, 8);
+        _manualPlacementPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        _manualPlacementPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        _manualPlacementPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        _manualPlacementPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        _manualPlacementPanel.RowStyles.Add(new RowStyle());
+        _manualPlacementPanel.RowStyles.Add(new RowStyle());
+
+        AddManualPlacementCell("X", _manualXInput, 0);
+        AddManualPlacementCell("Y", _manualYInput, 1);
+        AddManualPlacementCell("W", _manualWidthInput, 2);
+        AddManualPlacementCell("H", _manualHeightInput, 3);
+
+        _placementCombo.SelectedIndexChanged += (_, _) => UpdateManualPlacementEnabled();
+        ArrangeSettingsControls(useTwoColumns: true);
+    }
+
+    private void AddManualPlacementCell(string text, NumericUpDown numeric, int column)
+    {
+        var label = new Label
+        {
+            Text = text,
+            AutoSize = true,
+            Dock = DockStyle.Top,
+            ForeColor = TextMutedColor,
+            Margin = new Padding(column == 0 ? 0 : 6, 0, 0, 2)
+        };
+
+        numeric.Margin = new Padding(column == 0 ? 0 : 6, 0, 0, 0);
+        _manualPlacementPanel.Controls.Add(label, column, 0);
+        _manualPlacementPanel.Controls.Add(numeric, column, 1);
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -230,12 +314,121 @@ public sealed partial class LauncherForm : Form
     private void ApplyResponsiveStyle()
     {
         var compact = ClientSize.Width < 1080;
+        var twoColumnSettings = ClientSize.Width >= 1320;
+
         rootTableLayoutPanel.Padding = compact ? new Padding(16, 14, 16, 16) : new Padding(24, 20, 24, 24);
-        rootTableLayoutPanel.RowStyles[0].Height = compact ? 124F : 150F;
-        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 124F : 150F;
+        rootTableLayoutPanel.RowStyles[0].Height = compact ? 118F : 140F;
+        rootTableLayoutPanel.ColumnStyles[0].Width = twoColumnSettings ? 62F : 58F;
+        rootTableLayoutPanel.ColumnStyles[1].Width = twoColumnSettings ? 38F : 42F;
+        brandTableLayoutPanel.ColumnStyles[0].Width = compact ? 104F : 132F;
         brandTableLayoutPanel.ColumnStyles[2].Width = 0F;
-        titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 26F);
+        titleLabel.Font = new Font("Segoe UI Semibold", compact ? 22F : 25F);
         subtitleLabel.Font = new Font("Segoe UI", compact ? 10F : 11F);
+        ArrangeSettingsControls(twoColumnSettings);
+        ApplySettingsTextWrapping();
+    }
+
+    private void ArrangeSettingsControls(bool useTwoColumns)
+    {
+        settingsTableLayoutPanel.SuspendLayout();
+
+        if (useTwoColumns)
+        {
+            settingsTableLayoutPanel.ColumnCount = 2;
+            settingsTableLayoutPanel.ColumnStyles.Clear();
+            settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            ResetSettingsRows(15);
+
+            PlaceSetting(settingsHeaderLabel, 0, 0, 2);
+            PlaceSetting(actionsFlowLayoutPanel, 1, 0, 2);
+            PlaceSetting(languageLabel, 2, 0);
+            PlaceSetting(hardwareLabel, 2, 1);
+            PlaceSetting(languageComboBox, 3, 0);
+            PlaceSetting(hardwareComboBox, 3, 1);
+            PlaceSetting(repeatLabel, 4, 0);
+            PlaceSetting(outputLabel, 4, 1);
+            PlaceSetting(repeatComboBox, 5, 0);
+            PlaceSetting(videoOutputComboBox, 5, 1);
+            PlaceSetting(playbackOptionsFlowLayoutPanel, 6, 0, 2);
+            PlaceSetting(displayLabel, 7, 0);
+            PlaceSetting(gpuLabel, 7, 1);
+            PlaceSetting(displayComboBox, 8, 0);
+            PlaceSetting(gpuComboBox, 8, 1);
+            PlaceSetting(cacheLabel, 9, 0);
+            PlaceSetting(_placementLabel, 9, 1);
+            PlaceSetting(cacheNumericUpDown, 10, 0);
+            PlaceSetting(_placementCombo, 10, 1);
+            PlaceSetting(gpuInfoLabel, 11, 0, 2);
+            PlaceSetting(_manualPlacementLabel, 12, 0, 2);
+            PlaceSetting(_manualPlacementPanel, 13, 0, 2);
+            PlaceSetting(gpuNoteLabel, 14, 0, 2);
+        }
+        else
+        {
+            settingsTableLayoutPanel.ColumnCount = 1;
+            settingsTableLayoutPanel.ColumnStyles.Clear();
+            settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            ResetSettingsRows(23);
+
+            PlaceSetting(settingsHeaderLabel, 0, 0);
+            PlaceSetting(actionsFlowLayoutPanel, 1, 0);
+            PlaceSetting(languageLabel, 2, 0);
+            PlaceSetting(languageComboBox, 3, 0);
+            PlaceSetting(repeatLabel, 4, 0);
+            PlaceSetting(repeatComboBox, 5, 0);
+            PlaceSetting(playbackOptionsFlowLayoutPanel, 6, 0);
+            PlaceSetting(displayLabel, 7, 0);
+            PlaceSetting(displayComboBox, 8, 0);
+            PlaceSetting(hardwareLabel, 9, 0);
+            PlaceSetting(hardwareComboBox, 10, 0);
+            PlaceSetting(outputLabel, 11, 0);
+            PlaceSetting(videoOutputComboBox, 12, 0);
+            PlaceSetting(gpuLabel, 13, 0);
+            PlaceSetting(gpuComboBox, 14, 0);
+            PlaceSetting(gpuInfoLabel, 15, 0);
+            PlaceSetting(cacheLabel, 16, 0);
+            PlaceSetting(cacheNumericUpDown, 17, 0);
+            PlaceSetting(_placementLabel, 18, 0);
+            PlaceSetting(_placementCombo, 19, 0);
+            PlaceSetting(_manualPlacementLabel, 20, 0);
+            PlaceSetting(_manualPlacementPanel, 21, 0);
+            PlaceSetting(gpuNoteLabel, 22, 0);
+        }
+
+        settingsTableLayoutPanel.ResumeLayout(true);
+        ApplySettingsTextWrapping();
+    }
+
+    private void ApplySettingsTextWrapping()
+    {
+        var maxWidth = settingsTableLayoutPanel.ClientSize.Width
+            - settingsTableLayoutPanel.Padding.Left
+            - settingsTableLayoutPanel.Padding.Right
+            - SystemInformation.VerticalScrollBarWidth
+            - 8;
+
+        maxWidth = Math.Max(240, maxWidth);
+        gpuInfoLabel.MaximumSize = new Size(maxWidth, 0);
+        gpuNoteLabel.MaximumSize = new Size(maxWidth, 0);
+        _manualPlacementLabel.MaximumSize = new Size(maxWidth, 0);
+    }
+
+    private void ResetSettingsRows(int rowCount)
+    {
+        settingsTableLayoutPanel.RowCount = rowCount;
+        settingsTableLayoutPanel.RowStyles.Clear();
+        for (var i = 0; i < rowCount; i++)
+        {
+            settingsTableLayoutPanel.RowStyles.Add(new RowStyle());
+        }
+    }
+
+    private void PlaceSetting(Control control, int row, int column, int columnSpan = 1)
+    {
+        settingsTableLayoutPanel.SetRow(control, row);
+        settingsTableLayoutPanel.SetColumn(control, column);
+        settingsTableLayoutPanel.SetColumnSpan(control, columnSpan);
     }
 
     private void InstallCustomTitleBar()
@@ -412,6 +605,8 @@ public sealed partial class LauncherForm : Form
         languageLabel.Text = _localizer.T("language");
         repeatLabel.Text = _localizer.T("repeat.mode");
         displayLabel.Text = _localizer.T("target.display");
+        _placementLabel.Text = _localizer.T("video.placement");
+        _manualPlacementLabel.Text = _localizer.T("manual.rectangle");
         hardwareLabel.Text = _localizer.T("hardware.acceleration");
         outputLabel.Text = _localizer.T("video.output");
         gpuLabel.Text = _localizer.T("gpu.preference");
@@ -433,7 +628,8 @@ public sealed partial class LauncherForm : Form
         _kioskCheck.Text = _localizer.T("kiosk");
         _mutedCheck.Text = _localizer.T("muted");
         _fullscreenCheck.Checked = true;
-        _fullscreenCheck.Enabled = false;
+        _fullscreenCheck.AutoCheck = false;
+        _fullscreenCheck.Enabled = true;
         _gpuInfoLabel.Text = BuildGpuInfoText();
     }
 
@@ -486,6 +682,17 @@ public sealed partial class LauncherForm : Form
             new ComboItem<VideoOutputMode>("Direct3D 11", VideoOutputMode.Direct3D11),
             new ComboItem<VideoOutputMode>("Direct3D 9", VideoOutputMode.Direct3D9),
             new ComboItem<VideoOutputMode>("OpenGL", VideoOutputMode.OpenGL)
+        ]);
+
+        _placementCombo.Items.Clear();
+        _placementCombo.Items.AddRange(
+        [
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.fit"), VideoPlacementMode.Fit),
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.fill"), VideoPlacementMode.FillCrop),
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.stretch"), VideoPlacementMode.Stretch),
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.pixel"), VideoPlacementMode.PixelPerfect),
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.integer"), VideoPlacementMode.IntegerScale),
+            new ComboItem<VideoPlacementMode>(_localizer.T("placement.manual"), VideoPlacementMode.ManualRectangle)
         ]);
 
         _gpuCombo.Items.Clear();
@@ -872,14 +1079,21 @@ public sealed partial class LauncherForm : Form
         SelectComboValue(_displayCombo, Math.Clamp(_settings.DisplayIndex, 0, Math.Max(Screen.AllScreens.Length - 1, 0)));
         SelectComboValue(_hardwareCombo, _settings.HardwareAcceleration);
         SelectComboValue(_videoOutputCombo, _settings.VideoOutput);
+        SelectComboValue(_placementCombo, _settings.VideoPlacement);
         SelectGpuChoice();
 
         _shuffleCheck.Checked = _settings.Shuffle;
         _fullscreenCheck.Checked = true;
-        _fullscreenCheck.Enabled = false;
+        _fullscreenCheck.AutoCheck = false;
+        _fullscreenCheck.Enabled = true;
         _kioskCheck.Checked = _settings.Kiosk;
         _mutedCheck.Checked = _settings.Muted;
         _cacheInput.Value = Math.Clamp(_settings.FileCachingMs, (int)_cacheInput.Minimum, (int)_cacheInput.Maximum);
+        _manualXInput.Value = Math.Clamp(_settings.ManualVideoX, (int)_manualXInput.Minimum, (int)_manualXInput.Maximum);
+        _manualYInput.Value = Math.Clamp(_settings.ManualVideoY, (int)_manualYInput.Minimum, (int)_manualYInput.Maximum);
+        _manualWidthInput.Value = Math.Clamp(_settings.ManualVideoWidth, (int)_manualWidthInput.Minimum, (int)_manualWidthInput.Maximum);
+        _manualHeightInput.Value = Math.Clamp(_settings.ManualVideoHeight, (int)_manualHeightInput.Minimum, (int)_manualHeightInput.Maximum);
+        UpdateManualPlacementEnabled();
 
         UpdateStatus();
     }
@@ -1083,11 +1297,31 @@ public sealed partial class LauncherForm : Form
             DisplayIndex = ((ComboItem<int>)_displayCombo.SelectedItem!).Value,
             HardwareAcceleration = ((ComboItem<HardwareAccelerationMode>)_hardwareCombo.SelectedItem!).Value,
             VideoOutput = ((ComboItem<VideoOutputMode>)_videoOutputCombo.SelectedItem!).Value,
+            VideoPlacement = ((ComboItem<VideoPlacementMode>)_placementCombo.SelectedItem!).Value,
+            ManualVideoX = (int)_manualXInput.Value,
+            ManualVideoY = (int)_manualYInput.Value,
+            ManualVideoWidth = (int)_manualWidthInput.Value,
+            ManualVideoHeight = (int)_manualHeightInput.Value,
             GpuPreference = gpuChoice,
             NamedGpu = null,
             FileCachingMs = (int)_cacheInput.Value,
             VideoDirectory = _settings.VideoDirectory
         };
+    }
+
+    private void UpdateManualPlacementEnabled()
+    {
+        var enabled = _placementCombo.SelectedItem is ComboItem<VideoPlacementMode> item &&
+            item.Value == VideoPlacementMode.ManualRectangle;
+
+        _manualPlacementLabel.Visible = enabled;
+        _manualPlacementPanel.Visible = enabled;
+        foreach (Control control in _manualPlacementPanel.Controls)
+        {
+            control.Enabled = enabled;
+        }
+
+        settingsTableLayoutPanel.PerformLayout();
     }
 
     private void UpdateStatus()

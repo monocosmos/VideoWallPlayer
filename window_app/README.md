@@ -80,6 +80,16 @@ artik cmd veya PowerShell penceresi acmadan calisir.
 
 ## Gelistirme
 
+Visual Studio ile repo kokundeki solution dosyasini acabilirsiniz:
+
+```text
+..\VideoWallPlayer.sln
+```
+
+Windows app ve setup projeleri solution icinde ayri projeler olarak bulunur.
+Setup projesi build/publish edildiginde portable payload'u otomatik uretip
+kurulum EXE'sine gomuler.
+
 Derleme:
 
 ```powershell

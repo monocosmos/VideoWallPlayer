@@ -8,6 +8,8 @@ dist/
 out/
 dist-native/
 dist-android/
+releases/*
+!releases/.gitkeep
 window_app/dist/
 window_app/out/
 window_app/dist-native/

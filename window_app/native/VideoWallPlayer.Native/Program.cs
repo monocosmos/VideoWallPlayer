@@ -60,6 +60,16 @@ internal enum VideoOutputMode
     OpenGL
 }
 
+internal enum VideoPlacementMode
+{
+    Fit,
+    FillCrop,
+    Stretch,
+    PixelPerfect,
+    IntegerScale,
+    ManualRectangle
+}
+
 internal enum GpuPreferenceMode
 {
     WindowsDefault,
@@ -79,6 +89,11 @@ internal sealed class AppSettings
     public int DisplayIndex { get; set; }
     public HardwareAccelerationMode HardwareAcceleration { get; set; } = HardwareAccelerationMode.Auto;
     public VideoOutputMode VideoOutput { get; set; } = VideoOutputMode.Auto;
+    public VideoPlacementMode VideoPlacement { get; set; } = VideoPlacementMode.Fit;
+    public int ManualVideoX { get; set; }
+    public int ManualVideoY { get; set; }
+    public int ManualVideoWidth { get; set; }
+    public int ManualVideoHeight { get; set; }
     public GpuPreferenceMode GpuPreference { get; set; } = GpuPreferenceMode.WindowsDefault;
     public string? NamedGpu { get; set; }
     public int FileCachingMs { get; set; } = 3000;
@@ -274,12 +289,14 @@ internal sealed class ComboItem<T>
 
 internal sealed class VideoWallForm : Form
 {
-    private const int TransitionOverlapMs = 650;
+    private const int StartupCachingMs = 350;
+    private const int StandbyFirstFramePauseMs = 140;
 
     private readonly AppSettings _settings;
     private readonly LibVLC _libVlc;
     private readonly List<string> _sourcePlaylist;
     private readonly System.Windows.Forms.Timer _prepareNextTimer;
+    private readonly System.Windows.Forms.Timer _freezeStandbyTimer;
     private readonly Random _random = new();
 
     private MediaPlayer _activeMediaPlayer;
@@ -290,6 +307,8 @@ internal sealed class VideoWallForm : Form
     private Media? _standbyMedia;
     private int _standbyOrderIndex = -1;
     private bool _standbyPlaying;
+    private bool _standbyPriming;
+    private bool _standbyReady;
     private List<int> _playOrder = [];
     private int _orderIndex;
     private bool _isClosing;
@@ -311,16 +330,19 @@ internal sealed class VideoWallForm : Form
             Interval = 200
         };
 
+        _freezeStandbyTimer = new System.Windows.Forms.Timer
+        {
+            Interval = StandbyFirstFramePauseMs
+        };
+
         _standbyVideoView = new VideoView
         {
-            Dock = DockStyle.Fill,
             BackColor = Color.Black,
             MediaPlayer = _standbyMediaPlayer
         };
 
         _activeVideoView = new VideoView
         {
-            Dock = DockStyle.Fill,
             BackColor = Color.Black,
             MediaPlayer = _activeMediaPlayer
         };
@@ -362,6 +384,7 @@ internal sealed class VideoWallForm : Form
         if (disposing)
         {
             _prepareNextTimer.Dispose();
+            _freezeStandbyTimer.Dispose();
             _activeMedia?.Dispose();
             _standbyMedia?.Dispose();
             _activeMediaPlayer.Dispose();
@@ -387,7 +410,10 @@ internal sealed class VideoWallForm : Form
         _activeMediaPlayer.EncounteredError += MediaPlayerEnded;
         _standbyMediaPlayer.EndReached += MediaPlayerEnded;
         _standbyMediaPlayer.EncounteredError += MediaPlayerEnded;
-        _prepareNextTimer.Tick += (_, _) => PrepareNextWhenCloseToEnd();
+        _activeMediaPlayer.Playing += MediaPlayerStarted;
+        _standbyMediaPlayer.Playing += MediaPlayerStarted;
+        _prepareNextTimer.Tick += (_, _) => PrepareNextWhenNeeded();
+        _freezeStandbyTimer.Tick += (_, _) => FreezeStandbyOnFirstFrame();
 
         KeyDown += (_, e) =>
         {
@@ -412,6 +438,12 @@ internal sealed class VideoWallForm : Form
         };
     }
 
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        ApplyVideoPlacement();
+    }
+
     private MediaPlayer CreateMediaPlayer()
     {
         return new MediaPlayer(_libVlc)
@@ -420,9 +452,15 @@ internal sealed class VideoWallForm : Form
             EnableKeyInput = false,
             EnableMouseInput = false,
             Mute = _settings.Muted,
-            FileCaching = (uint)_settings.FileCachingMs,
-            NetworkCaching = (uint)_settings.FileCachingMs
+            FileCaching = (uint)GetStartupCachingMs(_settings),
+            NetworkCaching = (uint)GetStartupCachingMs(_settings)
         };
+    }
+
+    private static void ConfigurePlayerCaching(MediaPlayer player, int cachingMs)
+    {
+        player.FileCaching = (uint)cachingMs;
+        player.NetworkCaching = (uint)cachingMs;
     }
 
     private void MediaPlayerEnded(object? sender, EventArgs e)
@@ -435,6 +473,24 @@ internal sealed class VideoWallForm : Form
         RunOnUiThread(HandleVideoEnded);
     }
 
+    private void MediaPlayerStarted(object? sender, EventArgs e)
+    {
+        if (sender is not MediaPlayer player)
+        {
+            return;
+        }
+
+        RunOnUiThread(() =>
+        {
+            ApplyVideoPlacement(player);
+            if (ReferenceEquals(player, _standbyMediaPlayer) && _standbyPriming)
+            {
+                _freezeStandbyTimer.Stop();
+                _freezeStandbyTimer.Start();
+            }
+        });
+    }
+
     private void PlayCurrent()
     {
         if (_isClosing || _sourcePlaylist.Count == 0 || _playOrder.Count == 0)
@@ -445,10 +501,13 @@ internal sealed class VideoWallForm : Form
         var file = _sourcePlaylist[_playOrder[_orderIndex]];
         _activeMediaPlayer.Stop();
         _activeMedia?.Dispose();
-        _activeMedia = CreateMedia(file);
+        ConfigurePlayerCaching(_activeMediaPlayer, GetStartupCachingMs(_settings));
+        _activeMedia = CreateMedia(file, GetStartupCachingMs(_settings));
         _activeVideoView.BringToFront();
         _activeMediaPlayer.Play(_activeMedia);
+        ApplyVideoPlacement(_activeMediaPlayer);
         _isPaused = false;
+        PrepareNextWhenNeeded();
     }
 
     private void TogglePause()
@@ -460,11 +519,6 @@ internal sealed class VideoWallForm : Form
 
         _isPaused = !_isPaused;
         _activeMediaPlayer.SetPause(_isPaused);
-
-        if (_standbyPlaying)
-        {
-            _standbyMediaPlayer.SetPause(_isPaused);
-        }
 
         HidePlaybackCursor();
     }
@@ -485,40 +539,185 @@ internal sealed class VideoWallForm : Form
         _playbackCursorHidden = false;
     }
 
-    private void PrepareNextWhenCloseToEnd()
+    private void PrepareNextWhenNeeded()
     {
-        if (_isClosing || !_activeMediaPlayer.IsPlaying || _sourcePlaylist.Count < 2)
+        if (_isClosing || _activeMedia is null || _sourcePlaylist.Count == 0)
         {
             return;
         }
 
-        var remaining = _activeMediaPlayer.Length - _activeMediaPlayer.Time;
-
-        if (_activeMediaPlayer.Length > 0 && remaining <= TransitionOverlapMs)
-        {
-            StartStandbyPlayback();
-        }
-    }
-
-    private void StartStandbyPlayback()
-    {
         var nextOrderIndex = GetNextOrderIndex();
         if (nextOrderIndex is null ||
-            nextOrderIndex == _orderIndex ||
             (_standbyPlaying && _standbyOrderIndex == nextOrderIndex))
+        {
+            return;
+        }
+
+        if (!_activeMediaPlayer.IsPlaying && !_isPaused)
+        {
+            return;
+        }
+
+        StartStandbyPreload(nextOrderIndex.Value);
+    }
+
+    private void StartStandbyPreload(int nextOrderIndex)
+    {
+        if (_isClosing || nextOrderIndex < 0 || nextOrderIndex >= _playOrder.Count)
         {
             return;
         }
 
         ClearStandby();
 
-        var nextFile = _sourcePlaylist[_playOrder[nextOrderIndex.Value]];
-        _standbyMedia = CreateMedia(nextFile);
-        _standbyOrderIndex = nextOrderIndex.Value;
+        var nextFile = _sourcePlaylist[_playOrder[nextOrderIndex]];
+        var standbyCachingMs = GetStandbyCachingMs(_settings);
+        ConfigurePlayerCaching(_standbyMediaPlayer, standbyCachingMs);
+        _standbyMedia = CreateMedia(nextFile, standbyCachingMs);
+        _standbyOrderIndex = nextOrderIndex;
+        _standbyPriming = true;
+        _standbyReady = false;
+        _standbyMediaPlayer.Mute = true;
         _standbyVideoView.SendToBack();
         _standbyMediaPlayer.Play(_standbyMedia);
+        ApplyVideoPlacement(_standbyMediaPlayer);
         _standbyPlaying = true;
         _activeVideoView.BringToFront();
+    }
+
+    private void FreezeStandbyOnFirstFrame()
+    {
+        _freezeStandbyTimer.Stop();
+
+        if (_isClosing || !_standbyPriming || !_standbyPlaying || _standbyMedia is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _standbyMediaPlayer.SetPause(true);
+            if (_standbyMediaPlayer.Time > 0)
+            {
+                _standbyMediaPlayer.Time = 0;
+            }
+        }
+        catch
+        {
+            // A few VLC output modules may reject seeks during startup; the player is still pre-opened.
+        }
+
+        _standbyPriming = false;
+        _standbyReady = true;
+        ApplyVideoPlacement(_standbyMediaPlayer);
+    }
+
+    private void ApplyVideoPlacement()
+    {
+        ApplyVideoPlacement(_activeMediaPlayer);
+        ApplyVideoPlacement(_standbyMediaPlayer);
+    }
+
+    private void ApplyVideoPlacement(MediaPlayer player)
+    {
+        var view = ReferenceEquals(player, _activeMediaPlayer) ? _activeVideoView : _standbyVideoView;
+        var bounds = CalculateVideoBounds(player);
+        view.SuspendLayout();
+        view.Dock = DockStyle.None;
+        view.Bounds = bounds;
+        ApplyPlayerAspect(player, bounds);
+        view.ResumeLayout(false);
+    }
+
+    private Rectangle CalculateVideoBounds(MediaPlayer player)
+    {
+        var screen = ClientRectangle;
+        if (screen.Width <= 0 || screen.Height <= 0)
+        {
+            return Rectangle.Empty;
+        }
+
+        if (_settings.VideoPlacement == VideoPlacementMode.ManualRectangle)
+        {
+            var manualWidth = _settings.ManualVideoWidth > 0 ? _settings.ManualVideoWidth : screen.Width;
+            var manualHeight = _settings.ManualVideoHeight > 0 ? _settings.ManualVideoHeight : screen.Height;
+            return new Rectangle(_settings.ManualVideoX, _settings.ManualVideoY, manualWidth, manualHeight);
+        }
+
+        var source = GetVideoSize(player);
+        if (source.Width <= 0 || source.Height <= 0)
+        {
+            return screen;
+        }
+
+        return _settings.VideoPlacement switch
+        {
+            VideoPlacementMode.Stretch => screen,
+            VideoPlacementMode.FillCrop => ScaleToCover(screen, source),
+            VideoPlacementMode.PixelPerfect => Center(screen, source.Width, source.Height),
+            VideoPlacementMode.IntegerScale => ScaleInteger(screen, source),
+            _ => ScaleToFit(screen, source)
+        };
+    }
+
+    private static Size GetVideoSize(MediaPlayer player)
+    {
+        try
+        {
+            uint width = 0;
+            uint height = 0;
+            return player.Size(0, ref width, ref height) && width > 0 && height > 0
+                ? new Size((int)width, (int)height)
+                : Size.Empty;
+        }
+        catch
+        {
+            return Size.Empty;
+        }
+    }
+
+    private static Rectangle ScaleToFit(Rectangle screen, Size source)
+    {
+        var scale = Math.Min(screen.Width / (double)source.Width, screen.Height / (double)source.Height);
+        return Center(screen, (int)Math.Round(source.Width * scale), (int)Math.Round(source.Height * scale));
+    }
+
+    private static Rectangle ScaleToCover(Rectangle screen, Size source)
+    {
+        var scale = Math.Max(screen.Width / (double)source.Width, screen.Height / (double)source.Height);
+        return Center(screen, (int)Math.Round(source.Width * scale), (int)Math.Round(source.Height * scale));
+    }
+
+    private static Rectangle ScaleInteger(Rectangle screen, Size source)
+    {
+        var scale = Math.Max(1, Math.Min(screen.Width / source.Width, screen.Height / source.Height));
+        return Center(screen, source.Width * scale, source.Height * scale);
+    }
+
+    private static Rectangle Center(Rectangle screen, int width, int height)
+    {
+        width = Math.Max(1, width);
+        height = Math.Max(1, height);
+        return new Rectangle(
+            screen.Left + (screen.Width - width) / 2,
+            screen.Top + (screen.Height - height) / 2,
+            width,
+            height);
+    }
+
+    private void ApplyPlayerAspect(MediaPlayer player, Rectangle bounds)
+    {
+        try
+        {
+            player.Scale = 0;
+            player.AspectRatio = _settings.VideoPlacement == VideoPlacementMode.Stretch && bounds.Width > 0 && bounds.Height > 0
+                ? $"{bounds.Width}:{bounds.Height}"
+                : null;
+        }
+        catch
+        {
+            // Some output modules reject aspect updates while starting; the bounds still apply.
+        }
     }
 
     private int? GetNextOrderIndex()
@@ -543,34 +742,31 @@ internal sealed class VideoWallForm : Form
         return _settings.RepeatMode == RepeatMode.All ? 0 : null;
     }
 
-    private Media CreateMedia(string file)
+    private Media CreateMedia(string file, int cachingMs)
     {
         var media = new Media(_libVlc, file, FromType.FromPath);
-        media.AddOption($":file-caching={_settings.FileCachingMs}");
-        media.AddOption($":network-caching={_settings.FileCachingMs}");
+        media.AddOption($":file-caching={cachingMs}");
+        media.AddOption($":network-caching={cachingMs}");
         media.AddOption($":avcodec-hw={GetHardwareOption(_settings.HardwareAcceleration)}");
         return media;
     }
 
     private void ClearStandby()
     {
+        _freezeStandbyTimer.Stop();
         _standbyMediaPlayer.Stop();
         _standbyMedia?.Dispose();
         _standbyMedia = null;
         _standbyOrderIndex = -1;
         _standbyPlaying = false;
+        _standbyPriming = false;
+        _standbyReady = false;
     }
 
     private void HandleVideoEnded()
     {
         if (_isClosing || _sourcePlaylist.Count == 0)
         {
-            return;
-        }
-
-        if (_settings.RepeatMode == RepeatMode.One)
-        {
-            PlayCurrent();
             return;
         }
 
@@ -583,7 +779,7 @@ internal sealed class VideoWallForm : Form
         }
 
         _orderIndex = nextOrderIndex.Value;
-        if (SwapToStandbyIfReady())
+        if (SwapToStandbyIfAvailable())
         {
             return;
         }
@@ -591,13 +787,15 @@ internal sealed class VideoWallForm : Form
         PlayCurrent();
     }
 
-    private bool SwapToStandbyIfReady()
+    private bool SwapToStandbyIfAvailable()
     {
         if (!_standbyPlaying || _standbyMedia is null || _standbyOrderIndex != _orderIndex)
         {
             return false;
         }
 
+        _freezeStandbyTimer.Stop();
+        var wasStandbyReady = _standbyReady;
         var previousPlayer = _activeMediaPlayer;
         var previousView = _activeVideoView;
         var previousMedia = _activeMedia;
@@ -611,10 +809,27 @@ internal sealed class VideoWallForm : Form
         _standbyMedia = null;
         _standbyOrderIndex = -1;
         _standbyPlaying = false;
+        _standbyPriming = false;
+        _standbyReady = false;
 
         _activeVideoView.BringToFront();
+        _activeMediaPlayer.Mute = _settings.Muted;
+        if (wasStandbyReady)
+        {
+            try
+            {
+                _activeMediaPlayer.Time = 0;
+            }
+            catch
+            {
+                // If the decoder refuses a zero seek, continuing is still faster than reopening.
+            }
+        }
+
+        _activeMediaPlayer.SetPause(false);
         previousPlayer.Stop();
         previousMedia?.Dispose();
+        PrepareNextWhenNeeded();
         return true;
     }
 
@@ -687,14 +902,15 @@ internal sealed class VideoWallForm : Form
 
     private static string[] BuildVlcOptions(AppSettings settings)
     {
+        var startupCachingMs = GetStartupCachingMs(settings);
         var options = new List<string>
         {
             "--no-video-title-show",
             "--no-osd",
             "--no-stats",
             "--quiet",
-            $"--file-caching={settings.FileCachingMs}",
-            $"--network-caching={settings.FileCachingMs}",
+            $"--file-caching={startupCachingMs}",
+            $"--network-caching={startupCachingMs}",
             $"--avcodec-hw={GetHardwareOption(settings.HardwareAcceleration)}"
         };
 
@@ -705,6 +921,16 @@ internal sealed class VideoWallForm : Form
         }
 
         return [.. options];
+    }
+
+    private static int GetStartupCachingMs(AppSettings settings)
+    {
+        return Math.Clamp(Math.Min(settings.FileCachingMs, StartupCachingMs), 100, StartupCachingMs);
+    }
+
+    private static int GetStandbyCachingMs(AppSettings settings)
+    {
+        return Math.Clamp(settings.FileCachingMs, 100, 30000);
     }
 
     private static string GetHardwareOption(HardwareAccelerationMode mode)

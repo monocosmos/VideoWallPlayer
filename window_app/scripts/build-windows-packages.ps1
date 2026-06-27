@@ -14,6 +14,7 @@ $packageDir = Join-Path $windowRoot "dist-packages"
 $installerDir = Join-Path $windowRoot "dist-installer"
 $setupPublishDir = Join-Path $installerDir "publish"
 $setupPayloadDir = Join-Path $windowRoot "installer\VideoWallPlayer.Setup\Payload"
+$setupStaticPayloadPath = Join-Path $setupPayloadDir "Payload.zip"
 $releaseDir = Join-Path $root "releases"
 $portableName = "VideoWallPlayer-Windows-Portable-x64.zip"
 $setupName = "VideoWallPlayer-Windows-Setup-x64.exe"
@@ -45,12 +46,15 @@ if (Test-Path -LiteralPath $setupPublishDir) {
 New-Item -ItemType Directory -Force $setupPublishDir | Out-Null
 
 Copy-Item -LiteralPath $portablePath -Destination (Join-Path $setupPayloadDir $portableName) -Force
+Copy-Item -LiteralPath $portablePath -Destination $setupStaticPayloadPath -Force
 
 dotnet publish $setupProject `
   -c $Configuration `
   -r $Runtime `
   --self-contained true `
   -o $setupPublishDir `
+  -p:InstallerPayloadZipPath="$portablePath" `
+  -p:InstallerRuntimeIdentifier=$Runtime `
   -p:PublishSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true `
   -p:EnableCompressionInSingleFile=true `
